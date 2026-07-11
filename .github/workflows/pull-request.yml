@@ -1,0 +1,17 @@
+name: Pull Request Checks
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    name: Swift package tests
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v6
+      - name: Run tests
+        run: swift test --disable-sandbox --scratch-path .build/ci
