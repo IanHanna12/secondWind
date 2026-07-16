@@ -36,7 +36,13 @@ public final class LiveMetricsService: @unchecked Sendable {
         if let previous = previousCPUTicks {
             let totalDelta = ticks.total &- previous.total
             let idleDelta = ticks.idle &- previous.idle
-            cpu = totalDelta == 0 ? nil : min(1, max(0, 1 - Double(idleDelta) / Double(totalDelta)))
+            if totalDelta == 0 {
+                cpu = nil
+            } else {
+                let idleFraction = Double(idleDelta) / Double(totalDelta)
+                let utilization = 1 - idleFraction
+                cpu = min(max(utilization, 0), 1)
+            }
         } else {
             cpu = nil
         }
