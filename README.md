@@ -11,9 +11,9 @@ Second Wind is intentionally conservative. It only acts on locations it
 explicitly understands. Unknown or ambiguous data is left untouched rather
 than guessed at.
 
-> **Latest update · 16 July 2026** Source code is now organized by precise
-> responsibility—such as `Platform/Applications/Inventory/Preview` and
-> `System/Resolver/Process`. Read the [update history](UPDATES.md).
+> **Latest update · 16 July 2026** Rules can now be managed in-app through
+> approved safe routes, and direct Trash actions accept only validated scan
+> findings. Read the [update history](UPDATES.md).
 
 Read the project's [philosophy](PHILOSOPHY.md) for the principles behind those
 choices.

@@ -6,6 +6,11 @@ service. For the precise source behind any change, use the linked Git commit.
 
 ## 16 July 2026
 
+- [Safe rule management](https://github.com/IanHanna12/secondWind/commit/6e939bd):
+  added an in-app Rules screen for inspecting and enabling bundled rules,
+  creating local rules from approved routes, and exporting the local policy as
+  JSON. Direct Trash actions now accept only current, executable scan findings
+  and retain their rule versions in the audit trail.
 - [Source organization](https://github.com/IanHanna12/secondWind/commit/e28d58f):
   replaced the broad Infrastructure and Snapshots modules with System and
   Persistence, and grouped source by precise responsibility.
