@@ -506,7 +506,7 @@ private struct DashboardView: View {
             VStack(alignment: .leading, spacing: 24) {
                 PageTitle(
                     eyebrow: "SECOND WIND",
-                    title: "Make space with confidence",
+                    title: "Review before making space",
                     detail: "A clear local picture of your Mac, with every change reviewed first."
                 ) {
                     Button("Refresh", systemImage: "arrow.clockwise") { model.refreshDashboard() }
