@@ -24,9 +24,43 @@ struct SettingsView: View {
                 Toggle("Enable menu-bar readout", isOn: Binding(get: { model.menuMonitor }, set: { model.setMenuMonitor(enabled: $0) }))
                 Text("The menu-bar monitor is opt-in and performs no network activity.").font(.caption).foregroundStyle(.secondary)
             }
+            Section("Build identity") {
+                LabeledContent("Source revision") {
+                    Text(BuildIdentity.current.revision)
+                        .font(.body.monospaced())
+                        .textSelection(.enabled)
+                }
+                LabeledContent("Built") {
+                    Text(BuildIdentity.current.buildDateDescription)
+                        .textSelection(.enabled)
+                }
+                Text("These values identify the exact local source used to build this app. They are not release numbers, and Second Wind does not check for updates.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
         }
         .padding(28)
         .navigationTitle("Settings")
+    }
+}
+
+private struct BuildIdentity {
+    let revision: String
+    let buildDate: Date?
+
+    static let current: Self = {
+        let bundle = Bundle.main
+        let revision = bundle.object(forInfoDictionaryKey: "SecondWindSourceRevision") as? String
+        let buildDateText = bundle.object(forInfoDictionaryKey: "SecondWindBuildDate") as? String
+        return Self(
+            revision: revision.flatMap { $0 == "unavailable" ? nil : $0 } ?? "Not embedded",
+            buildDate: buildDateText.flatMap { ISO8601DateFormatter().date(from: $0) }
+        )
+    }()
+
+    var buildDateDescription: String {
+        guard let buildDate else { return "Not embedded" }
+        return buildDate.formatted(date: .abbreviated, time: .shortened)
     }
 }
 
