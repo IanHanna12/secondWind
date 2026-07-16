@@ -23,6 +23,11 @@ than guessed at.
 Read the project's [philosophy](PHILOSOPHY.md) for the principles behind those
 choices.
 
+## License
+
+Copyright © 2026 Ian Hanna. Second Wind is licensed under
+[GPL-3.0-only](LICENSE).
+
 ## Quick start
 
 Second Wind requires macOS 15 or later and Xcode or the Xcode Command Line
