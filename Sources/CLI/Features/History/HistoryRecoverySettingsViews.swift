@@ -24,7 +24,12 @@ struct SettingsView: View {
                 Toggle("Enable menu-bar readout", isOn: Binding(get: { model.menuMonitor }, set: { model.setMenuMonitor(enabled: $0) }))
                 Text("The menu-bar monitor is opt-in and performs no network activity.").font(.caption).foregroundStyle(.secondary)
             }
-            Section("Build identity") {
+            Section("Version and build") {
+                LabeledContent("App version") {
+                    Text(BuildIdentity.current.versionDescription)
+                        .font(.body.monospaced())
+                        .textSelection(.enabled)
+                }
                 LabeledContent("Source revision") {
                     Text(BuildIdentity.current.revision)
                         .font(.body.monospaced())
@@ -34,7 +39,7 @@ struct SettingsView: View {
                     Text(BuildIdentity.current.buildDateDescription)
                         .textSelection(.enabled)
                 }
-                Text("These values identify the exact local source used to build this app. They are not release numbers, and Second Wind does not check for updates.")
+                Text("The app version describes this development stage. The source revision identifies the exact local source used to build it. Second Wind does not check for updates.")
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
@@ -45,18 +50,30 @@ struct SettingsView: View {
 }
 
 private struct BuildIdentity {
+    let version: String?
+    let buildNumber: String?
     let revision: String
     let buildDate: Date?
 
     static let current: Self = {
         let bundle = Bundle.main
+        let version = bundle.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String
+        let buildNumber = bundle.object(forInfoDictionaryKey: "CFBundleVersion") as? String
         let revision = bundle.object(forInfoDictionaryKey: "SecondWindSourceRevision") as? String
         let buildDateText = bundle.object(forInfoDictionaryKey: "SecondWindBuildDate") as? String
         return Self(
+            version: version,
+            buildNumber: buildNumber,
             revision: revision.flatMap { $0 == "unavailable" ? nil : $0 } ?? "Not embedded",
             buildDate: buildDateText.flatMap { ISO8601DateFormatter().date(from: $0) }
         )
     }()
+
+    var versionDescription: String {
+        guard let version else { return "Not embedded" }
+        guard let buildNumber else { return version }
+        return "\(version) (\(buildNumber))"
+    }
 
     var buildDateDescription: String {
         guard let buildDate else { return "Not embedded" }

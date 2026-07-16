@@ -2,7 +2,14 @@
 
 This is a short, dated record of visible changes to Second Wind. It is not a
 release log: Second Wind has no release cadence, version tags, or update
-service. For the precise source behind any change, use the linked Git commit.
+service. App versions describe development stages; for the precise source
+behind any change, use the linked Git commit.
+
+## Current public development version
+
+**0.1.0** — Early proof of concept. Core cleanup, audit, and Recovery flows
+are implemented; interfaces, rules, and stored formats may change
+incompatibly.
 
 ## 16 July 2026
 

@@ -9,6 +9,7 @@
 /* Begin PBXBuildFile section */
 		006DCED917E8DC60E97A90D3 /* SecondWindApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = BDCDA961DC2B7282C1825686 /* SecondWindApp.swift */; };
 		038740D59FEC51BCFFD15A44 /* HistoryRecoverySettingsViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = 15EFFB0D3C66F913F070F8AF /* HistoryRecoverySettingsViews.swift */; };
+		A1B2C3D4E5F60718293A4B5C /* RulesView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1C2D3E4F5061728394A5B6C /* RulesView.swift */; };
 		1BD88E388D9938A493F5BF43 /* StorageHistoryViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9035E9CD2FB646DD3ABCF048 /* StorageHistoryViews.swift */; };
 		1D04756F7DB4B5FA7C9EEC71 /* SecondWindPrivilegedHelper in Resources */ = {isa = PBXBuildFile; fileRef = F049D4DEAD98146299C21124 /* SecondWindPrivilegedHelper */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		1ED357BC70942742C70FE38C /* SecondWindPlatform in Frameworks */ = {isa = PBXBuildFile; productRef = 8072990C72A3298B3BE47817 /* SecondWindPlatform */; };
@@ -47,6 +48,7 @@
 		9035E9CD2FB646DD3ABCF048 /* StorageHistoryViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Features/Storage/Snapshots/StorageHistoryViews.swift; sourceTree = "<group>"; };
 		9C62E1457EBE9824728FE5D8 /* SystemTasksView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Features/System/Tasks/SystemTasksView.swift; sourceTree = "<group>"; };
 		A34B7866014D956F806963A8 /* secondWind */ = {isa = PBXFileReference; lastKnownFileType = folder; name = secondWind; path = ..; sourceTree = SOURCE_ROOT; };
+		B1C2D3E4F5061728394A5B6C /* RulesView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Features/Rules/RulesView.swift; sourceTree = "<group>"; };
 		BDCDA961DC2B7282C1825686 /* SecondWindApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Application/SecondWindApp.swift; sourceTree = "<group>"; };
 		C0E6E629D3D22096721FEB80 /* VolumeCheckState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Features/System/Volume/VolumeCheckState.swift; sourceTree = "<group>"; };
 		CB4C7177097BE1C3DA08DC58 /* ApplicationsViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Features/Applications/ApplicationsViews.swift; sourceTree = "<group>"; };
@@ -122,6 +124,7 @@
 			children = (
 				CB4C7177097BE1C3DA08DC58 /* ApplicationsViews.swift */,
 				15EFFB0D3C66F913F070F8AF /* HistoryRecoverySettingsViews.swift */,
+				B1C2D3E4F5061728394A5B6C /* RulesView.swift */,
 				BDCDA961DC2B7282C1825686 /* SecondWindApp.swift */,
 				D369FAC52FD028BAD9B60B3E /* SharedViews.swift */,
 				9035E9CD2FB646DD3ABCF048 /* StorageHistoryViews.swift */,
@@ -271,6 +274,7 @@
 			files = (
 				9BC8E40E9D8545915C7A5AEC /* ApplicationsViews.swift in Sources */,
 				038740D59FEC51BCFFD15A44 /* HistoryRecoverySettingsViews.swift in Sources */,
+				A1B2C3D4E5F60718293A4B5C /* RulesView.swift in Sources */,
 				006DCED917E8DC60E97A90D3 /* SecondWindApp.swift in Sources */,
 				519A451B91C353BFC82EFA46 /* SharedViews.swift in Sources */,
 				1BD88E388D9938A493F5BF43 /* StorageHistoryViews.swift in Sources */,

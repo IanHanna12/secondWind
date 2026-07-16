@@ -7,6 +7,11 @@ candidates and making deliberate storage changes. It is independently
 implemented and has no telemetry, analytics, cloud sync, remote rule downloads,
 or update checks.
 
+> **Early development** — Second Wind is an early proof of concept. Its core
+> cleanup, audit, and Recovery flows are implemented, but interfaces, rules,
+> and stored formats may change incompatibly while the project develops.
+> The current public development version is **0.1.0**.
+
 Second Wind is intentionally conservative. It only acts on locations it
 explicitly understands. Unknown or ambiguous data is left untouched rather
 than guessed at.
