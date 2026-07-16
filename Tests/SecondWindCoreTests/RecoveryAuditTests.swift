@@ -1,7 +1,7 @@
 import Foundation
 import XCTest
 @testable import SecondWindCore
-@testable import SecondWindInfrastructure
+@testable import SecondWindPersistence
 
 final class RecoveryAuditTests: XCTestCase {
     func testLegacyManifestDecodesWithRecoveryPath() throws {

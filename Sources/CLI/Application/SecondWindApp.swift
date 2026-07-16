@@ -5,9 +5,9 @@ import SwiftUI
 import UniformTypeIdentifiers
 import SecondWindCore
 import SecondWindApplication
-import SecondWindInfrastructure
+import SecondWindSystem
 import SecondWindPlatform
-import SecondWindSnapshots
+import SecondWindPersistence
 
 @main
 struct SecondWindMain {

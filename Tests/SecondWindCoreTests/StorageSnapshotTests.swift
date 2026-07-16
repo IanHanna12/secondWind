@@ -1,7 +1,7 @@
 import Foundation
 import XCTest
 @testable import SecondWindCore
-@testable import SecondWindSnapshots
+@testable import SecondWindPersistence
 
 final class StorageSnapshotTests: XCTestCase {
     func testReportExplainsGrowthAndNewlyObservedStorage() {

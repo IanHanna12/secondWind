@@ -11,8 +11,9 @@ Second Wind is intentionally conservative. It only acts on locations it
 explicitly understands. Unknown or ambiguous data is left untouched rather
 than guessed at.
 
-> **Latest update · 16 July 2026** Local app builds now show the exact source revision and build time in
-> Settings. Read the [update history](UPDATES.md).
+> **Latest update · 16 July 2026** Source code is now organized by precise
+> responsibility—such as `Platform/Applications/Inventory/Preview` and
+> `System/Resolver/Process`. Read the [update history](UPDATES.md).
 
 Read the project's [philosophy](PHILOSOPHY.md) for the principles behind those
 choices.

@@ -3,7 +3,7 @@ import Foundation
 import OSLog
 import Security
 import SecondWindCore
-import SecondWindInfrastructure
+import SecondWindSystem
 import SecondWindPlatform
 
 /// Root-side implementation of deliberately narrow, typed helper operations.

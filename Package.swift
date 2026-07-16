@@ -7,18 +7,18 @@ let package = Package(
     products: [
         .library(name: "SecondWindCore", targets: ["SecondWindCore"]),
         .library(name: "SecondWindApplication", targets: ["SecondWindApplication"]),
-        .library(name: "SecondWindInfrastructure", targets: ["SecondWindInfrastructure"]),
+        .library(name: "SecondWindSystem", targets: ["SecondWindSystem"]),
+        .library(name: "SecondWindPersistence", targets: ["SecondWindPersistence"]),
         .library(name: "SecondWindPlatform", targets: ["SecondWindPlatform"]),
-        .library(name: "SecondWindSnapshots", targets: ["SecondWindSnapshots"]),
         .executable(name: "SecondWind", targets: ["SecondWind"])
     ],
     targets: [
         .target(name: "SecondWindCore", path: "Sources/SecondWindCore"),
         .target(name: "SecondWindApplication", dependencies: ["SecondWindCore"], path: "Sources/SecondWindApplication"),
-        .target(name: "SecondWindInfrastructure", dependencies: ["SecondWindCore"], path: "Sources/SecondWindInfrastructure"),
-        .target(name: "SecondWindPlatform", dependencies: ["SecondWindCore", "SecondWindInfrastructure"], path: "Sources/SecondWindPlatform"),
-        .target(name: "SecondWindSnapshots", dependencies: ["SecondWindCore"], path: "Sources/SecondWindSnapshots"),
-        .executableTarget(name: "SecondWind", dependencies: ["SecondWindCore", "SecondWindApplication", "SecondWindInfrastructure", "SecondWindPlatform", "SecondWindSnapshots"], path: "Sources/CLI"),
-        .testTarget(name: "SecondWindCoreTests", dependencies: ["SecondWindCore", "SecondWindApplication", "SecondWindInfrastructure", "SecondWindPlatform", "SecondWindSnapshots"], path: "Tests/SecondWindCoreTests")
+        .target(name: "SecondWindSystem", dependencies: ["SecondWindCore"], path: "Sources/SecondWindSystem"),
+        .target(name: "SecondWindPersistence", dependencies: ["SecondWindCore", "SecondWindSystem"], path: "Sources/SecondWindPersistence"),
+        .target(name: "SecondWindPlatform", dependencies: ["SecondWindCore", "SecondWindSystem"], path: "Sources/SecondWindPlatform"),
+        .executableTarget(name: "SecondWind", dependencies: ["SecondWindCore", "SecondWindApplication", "SecondWindSystem", "SecondWindPersistence", "SecondWindPlatform"], path: "Sources/CLI"),
+        .testTarget(name: "SecondWindCoreTests", dependencies: ["SecondWindCore", "SecondWindApplication", "SecondWindSystem", "SecondWindPersistence", "SecondWindPlatform"], path: "Tests/SecondWindCoreTests")
     ]
 )

@@ -27,11 +27,11 @@ targets:
       - package: SecondWindCore
         product: SecondWindApplication
       - package: SecondWindCore
-        product: SecondWindInfrastructure
+        product: SecondWindSystem
+      - package: SecondWindCore
+        product: SecondWindPersistence
       - package: SecondWindCore
         product: SecondWindPlatform
-      - package: SecondWindCore
-        product: SecondWindSnapshots
     settings:
       base:
         INFOPLIST_FILE: Config/App-Info.plist
@@ -53,7 +53,7 @@ targets:
       - package: SecondWindCore
         product: SecondWindCore
       - package: SecondWindCore
-        product: SecondWindInfrastructure
+        product: SecondWindSystem
       - package: SecondWindCore
         product: SecondWindPlatform
     settings:

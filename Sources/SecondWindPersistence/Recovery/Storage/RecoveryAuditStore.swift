@@ -1,5 +1,6 @@
 import Foundation
 import SecondWindCore
+import SecondWindSystem
 
 public struct RecoveryStore: RecoveryRepository, @unchecked Sendable {
     public let root: URL

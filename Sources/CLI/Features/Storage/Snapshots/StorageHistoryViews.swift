@@ -1,6 +1,6 @@
 import SwiftUI
 import SecondWindCore
-import SecondWindSnapshots
+import SecondWindPersistence
 
 struct StorageSnapshotsView: View {
     let model: SecondWindViewModel

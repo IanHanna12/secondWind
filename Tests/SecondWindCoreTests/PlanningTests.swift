@@ -2,7 +2,7 @@ import Foundation
 import XCTest
 @testable import SecondWindCore
 @testable import SecondWindApplication
-@testable import SecondWindInfrastructure
+@testable import SecondWindPersistence
 
 final class PlanningTests: XCTestCase {
     func testLegacyRecoveryDestinationDecodesAsRecovery() throws {

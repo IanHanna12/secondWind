@@ -1,7 +1,7 @@
 import Foundation
 import SecondWindCore
 import SecondWindApplication
-import SecondWindInfrastructure
+import SecondWindPersistence
 import SecondWindPlatform
 
 enum VerificationError: Error { case failed(String) }
