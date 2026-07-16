@@ -110,6 +110,12 @@ struct ActivityView: View {
                         VStack(alignment: .leading, spacing: 3) {
                             Text("\(record.kind.rawValue) — \(record.result)")
                             Text(record.timestamp.formatted()).font(.caption).foregroundStyle(.secondary)
+                            if !record.ruleVersions.isEmpty {
+                                Text("Rules: \(record.ruleVersions.joined(separator: ", "))")
+                                    .font(.caption.monospaced())
+                                    .foregroundStyle(.secondary)
+                                    .textSelection(.enabled)
+                            }
                         }
                     }
                 }

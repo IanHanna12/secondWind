@@ -36,8 +36,8 @@ struct SecondWindMain {
     }
 }
 
-private enum AppSection: String, CaseIterable, Identifiable { case dashboard = "Home", snapshots = "Storage history", monitor = "System monitor", cleanup = "Clean Up", applications = "Applications", volumeCheck = "Volume check", systemTasks = "System tasks", settings = "Settings", activity = "Recovery & activity"; var id: String { rawValue }
-    var symbol: String { switch self { case .dashboard: return "gauge.with.dots.needle.67percent"; case .snapshots: return "clock.arrow.trianglehead.counterclockwise.rotate.90"; case .monitor: return "waveform.path.ecg"; case .cleanup: return "sparkles"; case .applications: return "app.dashed"; case .volumeCheck: return "externaldrive.badge.checkmark"; case .systemTasks: return "wrench.and.screwdriver"; case .settings: return "gearshape"; case .activity: return "clock.arrow.circlepath" } }
+private enum AppSection: String, CaseIterable, Identifiable { case dashboard = "Home", snapshots = "Storage history", monitor = "System monitor", cleanup = "Clean Up", applications = "Applications", rules = "Rules", volumeCheck = "Volume check", systemTasks = "System tasks", settings = "Settings", activity = "Recovery & activity"; var id: String { rawValue }
+    var symbol: String { switch self { case .dashboard: return "gauge.with.dots.needle.67percent"; case .snapshots: return "clock.arrow.trianglehead.counterclockwise.rotate.90"; case .monitor: return "waveform.path.ecg"; case .cleanup: return "sparkles"; case .applications: return "app.dashed"; case .rules: return "checklist"; case .volumeCheck: return "externaldrive.badge.checkmark"; case .systemTasks: return "wrench.and.screwdriver"; case .settings: return "gearshape"; case .activity: return "clock.arrow.circlepath" } }
 }
 
 enum AuditExportFormat { case json, markdown
@@ -102,6 +102,7 @@ private final class ScanUIBridge: @unchecked Sendable {
     private let liveMetricsService: LiveMetricsService
     private let storageSnapshotService = StorageSnapshotService()
     private let preferenceService = PreferenceService()
+    private let rulePolicyStore = RulePolicyStore()
     private var scanTask: Task<Void, Never>?
     private var activeScanID: UUID?
 
@@ -145,9 +146,10 @@ private final class ScanUIBridge: @unchecked Sendable {
                 self?.refreshActivity()
             }
         )
-        scanTask = Task.detached { [home, auditStore, totalBytes, availableBytes, snapshotService, bridge] in
+        let rules = rulePolicyStore.effectiveRules()
+        scanTask = Task.detached { [home, auditStore, totalBytes, availableBytes, snapshotService, bridge, rules] in
             let localFileSystem = LocalFileSystem()
-            let outcome = RuleEngine(home: home, fileSystem: localFileSystem).scan { progress in
+            let outcome = RuleEngine(home: home, fileSystem: localFileSystem, rules: rules).scan { progress in
                 guard !Task.isCancelled else { return false }
                 bridge.report(progress)
                 return true
@@ -227,15 +229,22 @@ private final class ScanUIBridge: @unchecked Sendable {
         }
         catch { message = error.localizedDescription }
     }
-    func moveDirectlyToTrash(_ urls: [URL]) {
-        guard !urls.isEmpty else { return }
+    /// Fast-path Trash still operates only on findings from the current scan.
+    /// It intentionally has no public URL-based entry point.
+    func moveFindingsDirectlyToTrash(_ candidates: [Finding]) {
+        let currentFindings = candidates.filter { candidate in
+            findings.contains(where: { $0.id == candidate.id }) &&
+                candidate.risk.isExecutable && candidate.supportedAction != .none
+        }
+        guard !currentFindings.isEmpty else { return }
 
         Task {
             let finderTrashMover = FinderTrashMover()
             var movedPaths: [String] = []
             var failures: [(path: String, reason: String)] = []
 
-            for url in urls {
+            for finding in currentFindings {
+                let url = URL(fileURLWithPath: finding.path).standardizedFileURL
                 let path = url.standardizedFileURL.path
                 do {
                     try await finderTrashMover.moveToTrash(url)
@@ -246,11 +255,12 @@ private final class ScanUIBridge: @unchecked Sendable {
             }
 
             if !movedPaths.isEmpty {
+                let movedFindings = currentFindings.filter { finding in movedPaths.contains(finding.path) }
                 try? auditStore.append(.init(
                     kind: .manualTrash,
-                    ruleVersions: [],
+                    ruleVersions: Array(Set(movedFindings.map { "\($0.ruleID) v\($0.ruleVersion)" })).sorted(),
                     paths: movedPaths,
-                    bytes: 0,
+                    bytes: movedFindings.reduce(0) { $0 + $1.byteSize },
                     destination: .finderTrash,
                     result: "moved \(movedPaths.count) user-selected item(s) to Finder Trash"
                 ))
@@ -264,7 +274,7 @@ private final class ScanUIBridge: @unchecked Sendable {
             if !failures.isEmpty {
                 try? auditStore.append(.init(
                     kind: .failure,
-                    ruleVersions: [],
+                    ruleVersions: Array(Set(currentFindings.map { "\($0.ruleID) v\($0.ruleVersion)" })).sorted(),
                     paths: failures.map(\.path),
                     bytes: 0,
                     destination: .finderTrash,
@@ -287,10 +297,9 @@ private final class ScanUIBridge: @unchecked Sendable {
         }
     }
     func moveSelectedItemsToTrash() {
-        let urls = findings
+        let selectedFindings = findings
             .filter { selectedIDs.contains($0.id) }
-            .map { URL(fileURLWithPath: $0.path).standardizedFileURL }
-        moveDirectlyToTrash(urls)
+        moveFindingsDirectlyToTrash(selectedFindings)
     }
     func refreshDashboard() {
         let monitorService = monitorService
@@ -435,6 +444,7 @@ private struct SecondWindRootView: View {
                 Section("MAKE SPACE") {
                     sidebarItem(.cleanup)
                     sidebarItem(.applications)
+                    sidebarItem(.rules)
                 }
                 Section("INSIGHTS") {
                     sidebarItem(.snapshots)
@@ -456,6 +466,7 @@ private struct SecondWindRootView: View {
             case .monitor: LiveSystemView(model: model)
             case .cleanup: CleanupView(model: model)
             case .applications: ApplicationsView(model: model) { navigation.section = .cleanup }
+            case .rules: RulesView()
             case .volumeCheck: VolumeCheckView(model: model)
             case .systemTasks: SystemTasksView(model: model)
             case .settings: SettingsView(model: model)

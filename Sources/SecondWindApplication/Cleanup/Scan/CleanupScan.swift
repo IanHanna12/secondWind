@@ -4,16 +4,17 @@ import SecondWindCore
 public struct RuleEngine: Sendable {
     public let home: URL
     private let fileSystem: any FileSystem
-    public init(home: URL, fileSystem: any FileSystem) {
+    private let rules: [BuiltInRule]
+    public init(home: URL, fileSystem: any FileSystem, rules: [BuiltInRule] = BuiltInRules.all) {
         self.home = home.standardizedFileURL
         self.fileSystem = fileSystem
+        self.rules = rules
     }
     public func scan() -> [Finding] {
         scan(progress: { _ in true }).findings
     }
 
     public func scan(progress: @Sendable (ScanProgress) -> Bool) -> ScanOutcome {
-        let rules = BuiltInRules.all
         let totalUnits = rules.count + 2
         var findings: [Finding] = []
 
