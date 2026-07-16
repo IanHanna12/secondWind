@@ -1,0 +1,77 @@
+name: SecondWind
+options:
+  minimumXcodeGenVersion: 2.38.0
+  deploymentTarget:
+    macOS: "15.0"
+packages:
+  SecondWindCore:
+    path: ..
+settings:
+  base:
+    PRODUCT_BUNDLE_IDENTIFIER: org.secondwind.app
+    MARKETING_VERSION: "0.1.0"
+    CURRENT_PROJECT_VERSION: 1
+    CODE_SIGN_STYLE: Automatic
+    ENABLE_HARDENED_RUNTIME: YES
+    SWIFT_VERSION: "5.9"
+targets:
+  SecondWind:
+    type: application
+    platform: macOS
+    sources:
+      - path: ../Sources/CLI
+    dependencies:
+      - target: SecondWindPrivilegedHelper
+      - package: SecondWindCore
+        product: SecondWindCore
+      - package: SecondWindCore
+        product: SecondWindApplication
+      - package: SecondWindCore
+        product: SecondWindInfrastructure
+      - package: SecondWindCore
+        product: SecondWindPlatform
+      - package: SecondWindCore
+        product: SecondWindSnapshots
+    settings:
+      base:
+        INFOPLIST_FILE: Config/App-Info.plist
+        CODE_SIGN_ENTITLEMENTS: Config/SecondWind.entitlements
+        PRODUCT_BUNDLE_IDENTIFIER: org.secondwind.app
+      configs:
+        Debug:
+          ENABLE_DEBUG_DYLIB: NO
+    postBuildScripts:
+      - name: Embed privileged helper
+        script: |
+          "${SRCROOT}/../Scripts/embed-privileged-helper.sh"
+  SecondWindPrivilegedHelper:
+    type: tool
+    platform: macOS
+    sources:
+      - path: ../Optional/SecondWindPrivilegedHelper
+    dependencies:
+      - package: SecondWindCore
+        product: SecondWindCore
+      - package: SecondWindCore
+        product: SecondWindInfrastructure
+      - package: SecondWindCore
+        product: SecondWindPlatform
+    settings:
+      base:
+        INFOPLIST_FILE: Config/Helper-Info.plist
+        CODE_SIGN_ENTITLEMENTS: Config/PrivilegedMaintenanceHelper.entitlements
+        PRODUCT_BUNDLE_IDENTIFIER: org.secondwind.PrivilegedMaintenanceHelper
+        MACH_O_TYPE: mh_execute
+schemes:
+  App:
+    build:
+      targets:
+        SecondWind: all
+    run:
+      config: Debug
+  ExperimentalPrivilegedHelper:
+    build:
+      targets:
+        SecondWindPrivilegedHelper: all
+    run:
+      config: Release
