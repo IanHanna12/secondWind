@@ -104,6 +104,7 @@ final class PlanningTests: XCTestCase {
         let failure = try XCTUnwrap(audit.records().first { $0.kind == .failure })
         XCTAssertEqual(failure.paths, [first.path, second.path])
         XCTAssertEqual(failure.bytes, findings[0].byteSize)
+        XCTAssertEqual(failure.ruleVersions, ["fixture v1"])
     }
 
     private func makeFinding(_ url: URL) -> Finding {

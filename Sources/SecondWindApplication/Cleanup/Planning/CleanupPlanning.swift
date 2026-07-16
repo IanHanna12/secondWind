@@ -80,7 +80,8 @@ public struct PlanExecutor: Sendable {
     }
     public func execute(_ plan: CleanupPlan) async throws -> [ExecutionResult] {
         try planBuilder.validate(plan)
-        try auditRecorder.append(.init(kind: .executionStarted, planID: plan.id, ruleVersions: plan.actions.map(\.ruleVersionDescription), paths: plan.actions.map(\.sourcePath), bytes: plan.totalBytes, destination: plan.destination, result: "started"))
+        let ruleVersions = Array(Set(plan.actions.map(\.ruleVersionDescription))).sorted()
+        try auditRecorder.append(.init(kind: .executionStarted, planID: plan.id, ruleVersions: ruleVersions, paths: plan.actions.map(\.sourcePath), bytes: plan.totalBytes, destination: plan.destination, result: "started"))
         var results: [ExecutionResult] = []
         var completedPaths: [String] = []
 
@@ -101,12 +102,12 @@ public struct PlanExecutor: Sendable {
                     failedPath: action.sourcePath,
                     reason: error.localizedDescription
                 )
-                try? auditRecorder.append(.init(kind: .failure, planID: plan.id, ruleVersions: [], paths: completedPaths + [action.sourcePath], bytes: plan.actions.filter { completedPaths.contains($0.sourcePath) }.reduce(0) { $0 + $1.byteSize }, destination: plan.destination, result: executionError.localizedDescription))
+                try? auditRecorder.append(.init(kind: .failure, planID: plan.id, ruleVersions: ruleVersions, paths: completedPaths + [action.sourcePath], bytes: plan.actions.filter { completedPaths.contains($0.sourcePath) }.reduce(0) { $0 + $1.byteSize }, destination: plan.destination, result: executionError.localizedDescription))
                 throw executionError
             }
         }
 
-        try auditRecorder.append(.init(kind: .executionFinished, planID: plan.id, ruleVersions: [], paths: completedPaths, bytes: plan.totalBytes, destination: plan.destination, result: "success"))
+        try auditRecorder.append(.init(kind: .executionFinished, planID: plan.id, ruleVersions: ruleVersions, paths: completedPaths, bytes: plan.totalBytes, destination: plan.destination, result: "success"))
         return results
     }
 }
