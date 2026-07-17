@@ -24,6 +24,22 @@ than guessed at.
 Read the project's [philosophy](PHILOSOPHY.md) for the principles behind those
 choices.
 
+## In the app
+
+<p>
+  <img src="Docs/Screenshots/home.png" alt="Second Wind home dashboard" width="49%">
+  <img src="Docs/Screenshots/cleanup.png" alt="Granular cleanup review" width="49%">
+</p>
+
+<p>
+  <img src="Docs/Screenshots/cleanup-confirmation.png" alt="Final cleanup confirmation" width="49%">
+  <img src="Docs/Screenshots/recovery.png" alt="Recovery storage and local activity" width="49%">
+</p>
+
+<p>
+  <img src="Docs/Screenshots/system-monitor.png" alt="Local system monitor" width="49%">
+</p>
+
 ## License
 
 Copyright © 2026 Ian Hanna. Second Wind is licensed under
