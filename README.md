@@ -10,15 +10,16 @@ or update checks.
 > **Early development** — Second Wind is an early proof of concept. Its core
 > cleanup, audit, and Recovery flows are implemented, but interfaces, rules,
 > and stored formats may change incompatibly while the project develops.
-> The current public development version is **0.1.0**.
+> The current public development version is **0.2.0**.
 
 Second Wind is intentionally conservative. It only acts on locations it
 explicitly understands. Unknown or ambiguous data is left untouched rather
 than guessed at.
 
-> **Latest update · 16 July 2026** Rules can now be managed in-app through
-> approved safe routes, and direct Trash actions accept only validated scan
-> findings. Read the [update history](UPDATES.md).
+> **Latest update · 17 July 2026** Cleanup candidates are now reviewed at a
+> more granular level, app support paths show how they were matched, and
+> Recovery clearly identifies each stored item. Read the
+> [update history](UPDATES.md).
 
 Read the project's [philosophy](PHILOSOPHY.md) for the principles behind those
 choices.

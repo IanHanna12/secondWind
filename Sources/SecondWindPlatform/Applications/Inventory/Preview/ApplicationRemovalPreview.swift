@@ -13,16 +13,34 @@ public struct InstalledApplication: Identifiable, Hashable, Sendable {
     }
 }
 
+public enum AppSupportPathKind: String, Sendable {
+    case applicationSupport
+    case cache
+    case log
+    case nameMatch
+
+    public var title: String {
+        switch self {
+        case .applicationSupport: return "Application Support"
+        case .cache: return "Cache"
+        case .log: return "Log"
+        case .nameMatch: return "Name-based match"
+        }
+    }
+}
+
 public struct AppRemnant: Identifiable, Hashable, Sendable {
     public let url: URL
     public let byteSize: Int64
+    public let kind: AppSupportPathKind
     public let isExactKnownRemnant: Bool
     public let explanation: String
     public var id: String { url.path }
 
-    public init(url: URL, byteSize: Int64, isExactKnownRemnant: Bool, explanation: String) {
+    public init(url: URL, byteSize: Int64, kind: AppSupportPathKind = .applicationSupport, isExactKnownRemnant: Bool, explanation: String) {
         self.url = url
         self.byteSize = byteSize
+        self.kind = kind
         self.isExactKnownRemnant = isExactKnownRemnant
         self.explanation = explanation
     }

@@ -209,9 +209,12 @@ private struct ApplicationSupportRow: View {
             Image(systemName: remnant.isExactKnownRemnant ? "folder.fill" : "lock.fill")
                 .foregroundStyle(tint)
             VStack(alignment: .leading, spacing: 2) {
+                Text(remnant.kind.title).font(.caption.weight(.semibold))
                 Text(remnant.url.path)
                     .font(.caption.monospaced())
                     .lineLimit(1)
+                    .truncationMode(.middle)
+                    .help(remnant.url.path)
                 Text(remnant.explanation)
                     .font(.caption2)
                     .foregroundStyle(.secondary)

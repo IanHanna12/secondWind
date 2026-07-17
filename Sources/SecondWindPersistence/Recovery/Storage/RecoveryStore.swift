@@ -17,15 +17,15 @@ public struct RecoveryStore: RecoveryRepository, @unchecked Sendable {
     /// the original location in a manifest beside its payload.
     public func storeInRecovery(_ sourceURL: URL, planID: UUID) throws -> RecoveryItem {
         let source = sourceURL.standardizedFileURL
-        let itemID = UUID()
-        let itemFolder = root.appendingPathComponent(itemID.uuidString, isDirectory: true)
-        let payloadFolder = itemFolder.appendingPathComponent("payload", isDirectory: true)
+        let recoveryItemID = UUID()
+        let recoveryItemFolder = root.appendingPathComponent(recoveryItemID.uuidString, isDirectory: true)
+        let payloadFolder = recoveryItemFolder.appendingPathComponent("payload", isDirectory: true)
         let payloadURL = payloadFolder.appendingPathComponent(source.lastPathComponent)
 
         let localFileSystem = LocalFileSystem(fileManager: fileManager)
         let byteSize = localFileSystem.fileSize(at: source)
-        let item = RecoveryItem(
-            id: itemID,
+        let recoveryItem = RecoveryItem(
+            id: recoveryItemID,
             planID: planID,
             originalPath: source.path,
             recoveryPath: payloadURL.path,
@@ -36,8 +36,8 @@ public struct RecoveryStore: RecoveryRepository, @unchecked Sendable {
         try fileManager.createDirectory(at: payloadFolder, withIntermediateDirectories: true)
         do {
             try fileManager.moveItem(at: source, to: payloadURL)
-            try writeManifest(item, in: itemFolder)
-            return item
+            try writeManifest(recoveryItem, in: recoveryItemFolder)
+            return recoveryItem
         } catch {
             // A failed manifest must not silently strand a user's file. Try to
             // put a moved payload back before returning the original error.
@@ -45,7 +45,7 @@ public struct RecoveryStore: RecoveryRepository, @unchecked Sendable {
                 try? fileManager.moveItem(at: payloadURL, to: source)
             }
             if !fileManager.fileExists(atPath: payloadURL.path) {
-                try? fileManager.removeItem(at: itemFolder)
+                try? fileManager.removeItem(at: recoveryItemFolder)
             }
             throw error
         }
@@ -117,14 +117,14 @@ public struct RecoveryStore: RecoveryRepository, @unchecked Sendable {
         return supplied
     }
 
-    private func writeManifest(_ item: RecoveryItem, in itemFolder: URL) throws {
-        let manifestURL = itemFolder.appendingPathComponent("manifest.json")
-        let data = try JSONEncoder.secondWind.encode(item)
+    private func writeManifest(_ recoveryItem: RecoveryItem, in recoveryItemFolder: URL) throws {
+        let manifestURL = recoveryItemFolder.appendingPathComponent("manifest.json")
+        let data = try JSONEncoder.secondWind.encode(recoveryItem)
         try data.write(to: manifestURL, options: .atomic)
     }
 
-    private func readManifest(in itemFolder: URL) -> RecoveryItem? {
-        let manifestURL = itemFolder.appendingPathComponent("manifest.json")
+    private func readManifest(in recoveryItemFolder: URL) -> RecoveryItem? {
+        let manifestURL = recoveryItemFolder.appendingPathComponent("manifest.json")
         guard let data = try? Data(contentsOf: manifestURL) else {
             return nil
         }

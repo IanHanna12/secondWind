@@ -26,9 +26,23 @@ public struct ApplicationInventory: @unchecked Sendable {
     public func remnants(for app: InstalledApplication) -> [AppRemnant] {
         guard let identifier = app.bundleIdentifier else { return [] }
         let fileSystem = LocalFileSystem(fileManager: fileManager)
-        let exact = ["Library/Application Support/\(identifier)", "Library/Caches/\(identifier)", "Library/Logs/\(identifier)"]
-        let exactItems = exact.map { home.appendingPathComponent($0) }.filter { fileManager.fileExists(atPath: $0.path) }.map { AppRemnant(url: $0, byteSize: fileSystem.fileSize(at: $0), isExactKnownRemnant: true, explanation: "Exact support path for bundle identifier \(identifier).") }
-        let ambiguous = [home.appendingPathComponent("Library/Application Support/\(app.displayName)")].filter { fileManager.fileExists(atPath: $0.path) }.map { AppRemnant(url: $0, byteSize: fileSystem.fileSize(at: $0), isExactKnownRemnant: false, explanation: "Name-based match; select it individually only after review.") }
+        let exact = [
+            (kind: AppSupportPathKind.applicationSupport, path: "Library/Application Support/\(identifier)"),
+            (kind: .cache, path: "Library/Caches/\(identifier)"),
+            (kind: .log, path: "Library/Logs/\(identifier)")
+        ]
+        let exactItems = exact.compactMap { candidate -> AppRemnant? in
+            let url = home.appendingPathComponent(candidate.path)
+            guard fileManager.fileExists(atPath: url.path) else { return nil }
+            return AppRemnant(
+                url: url,
+                byteSize: fileSystem.fileSize(at: url),
+                kind: candidate.kind,
+                isExactKnownRemnant: true,
+                explanation: "Exact \(candidate.kind.title.lowercased()) path for bundle identifier \(identifier)."
+            )
+        }
+        let ambiguous = [home.appendingPathComponent("Library/Application Support/\(app.displayName)")].filter { fileManager.fileExists(atPath: $0.path) }.map { AppRemnant(url: $0, byteSize: fileSystem.fileSize(at: $0), kind: .nameMatch, isExactKnownRemnant: false, explanation: "Name-based match; it is not proven to belong to this app and stays protected.") }
         return exactItems + ambiguous
     }
 
@@ -40,7 +54,7 @@ public struct ApplicationInventory: @unchecked Sendable {
         let preview = removalPreview(for: app)
         let appFinding = Finding(ruleID: "application-inventory", ruleVersion: BuiltInRules.version, title: "Application: \(app.displayName)", path: app.url.path, byteSize: preview.applicationBytes, category: .applications, origin: "Application inventory", explanation: "The selected application bundle.", risk: .reviewRequired, supportedAction: .uninstall, confidence: .exact)
         let remnantFindings = preview.remnants.map { remnant in
-            Finding(ruleID: "application-remnant", ruleVersion: BuiltInRules.version, title: "Support files for \(app.displayName)", path: remnant.url.path, byteSize: remnant.byteSize, category: .applications, origin: "Application inventory", explanation: remnant.explanation, risk: remnant.isExactKnownRemnant ? .reviewRequired : .protected, supportedAction: remnant.isExactKnownRemnant ? .uninstall : .none, confidence: remnant.isExactKnownRemnant ? .exact : .needsUserReview)
+            Finding(ruleID: "application-remnant", ruleVersion: BuiltInRules.version, title: "\(remnant.kind.title) for \(app.displayName)", path: remnant.url.path, byteSize: remnant.byteSize, category: .applications, origin: "Application inventory", explanation: remnant.explanation, risk: remnant.isExactKnownRemnant ? .reviewRequired : .protected, supportedAction: remnant.isExactKnownRemnant ? .uninstall : .none, confidence: remnant.isExactKnownRemnant ? .exact : .needsUserReview)
         }
         return [appFinding] + remnantFindings
     }

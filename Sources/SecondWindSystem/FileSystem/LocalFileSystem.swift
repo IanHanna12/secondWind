@@ -23,6 +23,15 @@ public struct LocalFileSystem: FileSystem, @unchecked Sendable {
         return total
     }
 
+    public func directChildren(in root: URL) -> [URL] {
+        (try? fileManager.contentsOfDirectory(
+            at: root,
+            includingPropertiesForKeys: nil,
+            options: [.skipsHiddenFiles]
+        ))?
+        .sorted { $0.lastPathComponent.localizedStandardCompare($1.lastPathComponent) == .orderedAscending } ?? []
+    }
+
     public func regularFiles(in root: URL, maximumDepth: Int) -> [URL] {
         guard let enumerator = fileManager.enumerator(at: root, includingPropertiesForKeys: [.isRegularFileKey, .fileSizeKey], options: [.skipsHiddenFiles, .skipsPackageDescendants]) else { return [] }
         let depth = root.pathComponents.count

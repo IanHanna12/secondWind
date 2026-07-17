@@ -1,7 +1,7 @@
 import Foundation
 import SecondWindCore
 
-public struct RuleEngine: Sendable {
+public struct CleanupScanner: Sendable {
     public let home: URL
     private let fileSystem: any FileSystem
     private let rules: [BuiltInRule]
@@ -24,7 +24,7 @@ public struct RuleEngine: Sendable {
             }
             let url = home.appendingPathComponent(rule.relativePath).standardizedFileURL
             guard fileSystem.exists(url) else { continue }
-            findings.append(Finding(ruleID: rule.id, ruleVersion: rule.version, title: rule.title, path: url.path, byteSize: fileSystem.fileSize(at: url), category: rule.category, origin: "Built-in rule \(rule.id) v\(rule.version)", explanation: rule.explanation, risk: rule.risk, supportedAction: rule.action, confidence: rule.confidence))
+            findings += findingsForRule(rule, at: url)
         }
 
         guard progress(.init(completedUnits: rules.count, totalUnits: totalUnits, currentTitle: "Downloads")) else {
@@ -39,6 +39,38 @@ public struct RuleEngine: Sendable {
 
         _ = progress(.init(completedUnits: totalUnits, totalUnits: totalUnits, currentTitle: "Finishing scan"))
         return .completed(findings.filter { $0.byteSize > 0 }.sorted { $0.byteSize > $1.byteSize })
+    }
+
+    private func findingsForRule(_ rule: BuiltInRule, at root: URL) -> [Finding] {
+        let targets: [URL]
+        switch rule.findingScope {
+        case .root:
+            targets = [root]
+        case .immediateChildren:
+            let children = fileSystem.directChildren(in: root).filter(fileSystem.exists)
+            targets = children.isEmpty ? [root] : children
+        }
+
+        return targets.map { target in
+            let isRoot = target == root
+            let title = isRoot ? rule.title : "\(rule.title): \(target.lastPathComponent)"
+            let explanation = isRoot
+                ? rule.explanation
+                : "\(rule.explanation) Shown separately so its size and path can be reviewed independently."
+            return Finding(
+                ruleID: rule.id,
+                ruleVersion: rule.version,
+                title: title,
+                path: target.path,
+                byteSize: fileSystem.fileSize(at: target),
+                category: rule.category,
+                origin: "Built-in rule \(rule.id) v\(rule.version)",
+                explanation: explanation,
+                risk: rule.risk,
+                supportedAction: rule.action,
+                confidence: rule.confidence
+            )
+        }
     }
 
     private func reviewRequiredFileFindings(in root: URL) -> [Finding] {

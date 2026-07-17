@@ -4,6 +4,7 @@ import Foundation
 public protocol FileSystem: Sendable {
     func exists(_ url: URL) -> Bool
     func fileSize(at url: URL) -> Int64
+    func directChildren(in root: URL) -> [URL]
     func regularFiles(in root: URL, maximumDepth: Int) -> [URL]
 }
 

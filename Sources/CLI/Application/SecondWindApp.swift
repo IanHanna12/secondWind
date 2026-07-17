@@ -149,7 +149,7 @@ private final class ScanUIBridge: @unchecked Sendable {
         let rules = rulePolicyStore.effectiveRules()
         scanTask = Task.detached { [home, auditStore, totalBytes, availableBytes, snapshotService, bridge, rules] in
             let localFileSystem = LocalFileSystem()
-            let outcome = RuleEngine(home: home, fileSystem: localFileSystem, rules: rules).scan { progress in
+            let outcome = CleanupScanner(home: home, fileSystem: localFileSystem, rules: rules).scan { progress in
                 guard !Task.isCancelled else { return false }
                 bridge.report(progress)
                 return true
@@ -1019,10 +1019,11 @@ private struct FindingRow: View {
                     .font(.caption)
                     .foregroundStyle(.secondary)
                     .lineLimit(2)
-                Text(item.path)
+                Text("Location: \(visiblePath)")
                     .font(.caption2.monospaced())
                     .foregroundStyle(.secondary)
                     .lineLimit(1)
+                    .help(item.path)
             }
             Spacer()
             Text(ByteCountFormatter.string(fromByteCount: item.byteSize, countStyle: .file))
@@ -1067,6 +1068,11 @@ private struct FindingRow: View {
         if item.risk == .protected { return "Protected — Second Wind will not include this in a plan." }
         if item.confidence == .needsUserReview { return "Review required before including this in a plan." }
         return "Eligible for a reversible cleanup plan."
+    }
+
+    private var visiblePath: String {
+        let url = URL(fileURLWithPath: item.path)
+        return "\(url.deletingLastPathComponent().lastPathComponent)/\(url.lastPathComponent)"
     }
 }
 struct StorageOutcomePreview: View {
@@ -1262,6 +1268,8 @@ private struct PlanActionRow: View {
                     .font(.caption.monospaced())
                     .foregroundStyle(.secondary)
                     .lineLimit(1)
+                    .truncationMode(.middle)
+                    .help(action.sourcePath)
             }
             Spacer()
             Text(ByteCountFormatter.string(fromByteCount: action.byteSize, countStyle: .file))

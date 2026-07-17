@@ -106,9 +106,19 @@ struct ActivityView: View {
                     }
                     else {
                         ForEach(model.recoveryItems) { item in
-                            HStack {
-                                VStack(alignment: .leading) {
-                                    Text(item.originalPath).lineLimit(1)
+                            HStack(alignment: .top) {
+                                VStack(alignment: .leading, spacing: 3) {
+                                    Text(URL(fileURLWithPath: item.originalPath).lastPathComponent).font(.headline)
+                                    Text("Original: \(item.originalPath)")
+                                        .font(.caption.monospaced())
+                                        .lineLimit(1)
+                                        .truncationMode(.middle)
+                                        .help(item.originalPath)
+                                    Text("Recovery reference: \(item.id.uuidString)")
+                                        .font(.caption.monospaced())
+                                        .foregroundStyle(.secondary)
+                                    Text("Stored \(item.createdAt.formatted(date: .abbreviated, time: .shortened)) · \(ByteCountFormatter.string(fromByteCount: item.byteSize, countStyle: .file))")
+                                        .font(.caption).foregroundStyle(.secondary)
                                     Text(item.needsReview ? "Review required; never auto-deleted" : "Available for restore until \(item.reviewAfter.formatted(date: .abbreviated, time: .omitted))")
                                         .font(.caption).foregroundStyle(.secondary)
                                 }

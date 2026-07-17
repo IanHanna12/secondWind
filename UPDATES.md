@@ -7,9 +7,21 @@ behind any change, use the linked Git commit.
 
 ## Current public development version
 
-**0.1.0** — Early proof of concept. Core cleanup, audit, and Recovery flows
-are implemented; interfaces, rules, and stored formats may change
-incompatibly.
+**0.2.0** — Granular cleanup review. Cache rules can show individual direct
+children for independent review, app support paths disclose how they were
+matched, and Recovery gives every stored item a clear reference. Interfaces,
+rules, and stored formats may still change incompatibly.
+
+## 17 July 2026
+
+- Cleanup findings for rebuildable developer and package caches are now shown
+  per direct child where possible. Each candidate has its own path, size, and
+  explanation before it can be selected.
+- Application removal previews label exact bundle-ID matches separately from
+  conservative name-based matches, so uncertain support data remains visible
+  as uncertain.
+- Recovery history now displays the original location, stored size and time,
+  and a stable Recovery reference for each item.
 
 ## 16 July 2026
 

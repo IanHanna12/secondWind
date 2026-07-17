@@ -23,7 +23,9 @@ final class ApplicationInventoryTests: XCTestCase {
         XCTAssertEqual(preview.applicationBytes, 12)
         XCTAssertEqual(preview.exactRemnants.count, 1)
         XCTAssertEqual(preview.exactRemnantBytes, 8)
+        XCTAssertEqual(preview.exactRemnants.first?.kind, .applicationSupport)
         XCTAssertEqual(preview.protectedRemnants.count, 1)
+        XCTAssertEqual(preview.protectedRemnants.first?.kind, .nameMatch)
         XCTAssertEqual(preview.removableBytes, 20)
 
         let findings = inventory.uninstallFindings(for: app)

@@ -11,6 +11,7 @@ struct FixtureFileSystem: FileSystem {
     let paths: [URL: Int64]
     func exists(_ url: URL) -> Bool { paths[url] != nil }
     func fileSize(at url: URL) -> Int64 { paths[url] ?? 0 }
+    func directChildren(in root: URL) -> [URL] { [] }
     func regularFiles(in root: URL, maximumDepth: Int) -> [URL] { [] }
 }
 
@@ -20,7 +21,7 @@ func verify() throws {
     let home = URL(fileURLWithPath: "/fixture-home")
     let docker = home.appendingPathComponent("Library/Containers/com.docker.docker")
     let logs = home.appendingPathComponent("Library/Logs")
-    let findings = RuleEngine(home: home, fileSystem: FixtureFileSystem(paths: [docker: 10, logs: 20])).scan()
+    let findings = CleanupScanner(home: home, fileSystem: FixtureFileSystem(paths: [docker: 10, logs: 20])).scan()
     try check(findings.first { $0.ruleID == "user-logs" }?.confidence == .exact, "exact rule match")
     try check(findings.first { $0.ruleID == "docker-data" }?.risk == .protected, "protected Docker")
 
