@@ -89,10 +89,11 @@ public struct StorageInventoryEntry: Hashable, Identifiable, Sendable {
     public let isActionable: Bool
     public let countsTowardCategoryTotal: Bool
     public let modifiedAt: Date?
+    public let applicationAssociations: [ApplicationAssociation]
 
     public var id: String { key }
 
-    public init(_ finding: Finding, countsTowardCategoryTotal: Bool = true, modifiedAt: Date? = nil) {
+    public init(_ finding: Finding, countsTowardCategoryTotal: Bool = true, modifiedAt: Date? = nil, applicationAssociations: [ApplicationAssociation] = []) {
         key = "finding|\(finding.ruleID)|\(finding.path)"
         title = finding.title
         path = finding.path
@@ -104,6 +105,7 @@ public struct StorageInventoryEntry: Hashable, Identifiable, Sendable {
         isActionable = finding.risk.isExecutable && finding.supportedAction != .none
         self.countsTowardCategoryTotal = countsTowardCategoryTotal
         self.modifiedAt = modifiedAt
+        self.applicationAssociations = applicationAssociations
     }
 
     public init(_ recoveryItem: RecoveryItem) {
@@ -118,9 +120,10 @@ public struct StorageInventoryEntry: Hashable, Identifiable, Sendable {
         isActionable = false
         countsTowardCategoryTotal = true
         modifiedAt = nil
+        applicationAssociations = []
     }
 
-    public init(key: String, title: String, path: String?, category: StorageCategory, byteSize: Int64, origin: String, explanation: String, risk: Risk, isActionable: Bool, countsTowardCategoryTotal: Bool = true, modifiedAt: Date? = nil) {
+    public init(key: String, title: String, path: String?, category: StorageCategory, byteSize: Int64, origin: String, explanation: String, risk: Risk, isActionable: Bool, countsTowardCategoryTotal: Bool = true, modifiedAt: Date? = nil, applicationAssociations: [ApplicationAssociation] = []) {
         self.key = key
         self.title = title
         self.path = path
@@ -132,5 +135,24 @@ public struct StorageInventoryEntry: Hashable, Identifiable, Sendable {
         self.isActionable = isActionable
         self.countsTowardCategoryTotal = countsTowardCategoryTotal
         self.modifiedAt = modifiedAt
+        self.applicationAssociations = applicationAssociations
+    }
+
+    /// Returns this immutable entry with its resolved application metadata.
+    public func withApplicationAssociations(_ associations: [ApplicationAssociation]) -> StorageInventoryEntry {
+        StorageInventoryEntry(
+            key: key,
+            title: title,
+            path: path,
+            category: category,
+            byteSize: byteSize,
+            origin: origin,
+            explanation: explanation,
+            risk: risk,
+            isActionable: isActionable,
+            countsTowardCategoryTotal: countsTowardCategoryTotal,
+            modifiedAt: modifiedAt,
+            applicationAssociations: associations
+        )
     }
 }

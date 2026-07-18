@@ -10,15 +10,15 @@ or update checks.
 > **Early development** — Second Wind is an early proof of concept. Its core
 > cleanup, audit, and Recovery flows are implemented, but interfaces, rules,
 > and stored formats may change incompatibly while the project develops.
-> The current public development version is **0.3.0**.
+> The current public development version is **0.4.0**.
 
 Second Wind is intentionally conservative. It only acts on locations it
 explicitly understands. Unknown or ambiguous data is left untouched rather
 than guessed at.
 
-> **Latest update · 18 July 2026** Storage is now presented as a local,
-> categorized inventory with explainable changes since the previous scan. Read the
-> [update history](UPDATES.md).
+> **Latest update · 18 July 2026** Application storage now projects the
+> same local storage inventory into explainable application footprints, possible
+> orphaned data, and per-application changes. Read the [update history](UPDATES.md).
 
 Read the project's [philosophy](PHILOSOPHY.md) for the principles behind those
 choices.
@@ -65,7 +65,8 @@ This launches the standard app without the optional privileged helper enabled.
 - Explain known Applications, Downloads, Documents, Desktop, developer storage,
   caches, logs, and Recovery storage without presenting them as automatic
   cleanup targets.
-- Inspect installed apps and their exact, known support paths.
+- Inspect installed apps, their exact known support paths, and possible
+  identifier-based orphaned data without granting those paths any cleanup rights.
 - Check a validated local volume with macOS's read-only verification.
 
 ## Storage intelligence
@@ -79,6 +80,16 @@ unknown storage contains.
 
 Recommendations are deterministic explanations of known, eligible items. They
 never select, move, or delete anything on their own.
+
+## Application storage
+
+Applications is a read-only projection of that same inventory: it separates an
+application bundle from its known related storage, such as support data, caches,
+logs, preferences, containers, and developer data. Each relationship includes
+its path and association reason. Exact bundle-identifier paths can be shown as
+possible orphaned data when the corresponding application is not installed;
+they remain protected. Application-specific selection only adds existing,
+eligible findings to the normal review, confirmation, Trash, or Recovery flow.
 
 ## Guarantees and limits
 

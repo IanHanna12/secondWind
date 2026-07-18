@@ -4,7 +4,7 @@ public enum MaintenanceTask: String, Codable, CaseIterable, Identifiable, Sendab
     case periodicScripts, rebuildSpotlightIndex, verifyVolume
     public var id: String { rawValue }
     public var title: String { switch self { case .periodicScripts: return "Run periodic maintenance scripts"; case .rebuildSpotlightIndex: return "Rebuild Spotlight index"; case .verifyVolume: return "Verify local volume" } }
-    public var explanation: String { switch self { case .periodicScripts: return "Runs macOS's legacy periodic scripts when they are provided by the operating system."; case .rebuildSpotlightIndex: return "Rebuilds the metadata index for this Mac's startup volume."; case .verifyVolume: return "Checks an eligible local volume for filesystem errors." } }
+    public var explanation: String { switch self { case .periodicScripts: return "Runs macOS's legacy periodic scripts when they are provided by the operating system."; case .rebuildSpotlightIndex: return "Enables Spotlight indexing if needed and rebuilds the metadata index for the selected volume."; case .verifyVolume: return "Checks an eligible local volume for filesystem errors." } }
     public var isAvailable: Bool { self != .periodicScripts || FileManager.default.isExecutableFile(atPath: "/usr/sbin/periodic") }
 }
 
@@ -15,4 +15,16 @@ public struct PrivilegedMaintenanceRequest: Codable, Sendable { public let task:
 public protocol PrivilegedMaintenanceClient: Sendable { func run(_ request: PrivilegedMaintenanceRequest) async throws }
 public struct MaintenanceExecutionResult: Sendable { public let task: MaintenanceTask; public let succeeded: Bool; public let output: String }
 public enum MaintenanceRunnerError: LocalizedError { case launchFailed, rejected(String); public var errorDescription: String? { switch self { case .launchFailed: return "macOS could not start this maintenance task."; case .rejected(let text): return text } } }
-public struct LocalMaintenanceRunner: Sendable { public init() {}; public func run(task: MaintenanceTask, volume: VolumeReference?) throws -> MaintenanceExecutionResult { try MaintenancePreflight().validate(task: task, volume: volume); let commands: [(String, [String])]; switch task { case .periodicScripts: commands = [("/usr/sbin/periodic", ["daily"]), ("/usr/sbin/periodic", ["weekly"]), ("/usr/sbin/periodic", ["monthly"])]; case .rebuildSpotlightIndex: guard let volume else { throw MaintenanceRunnerError.rejected("Select a local volume first.") }; commands = [("/usr/bin/mdutil", ["-E", volume.url.path])]; case .verifyVolume: guard let volume else { throw MaintenanceRunnerError.rejected("Select a local volume first.") }; commands = [("/usr/sbin/diskutil", ["verifyVolume", volume.url.path])] }; var output = ""; var succeeded = true; for (executable, arguments) in commands { let process = Process(); process.executableURL = URL(fileURLWithPath: executable); process.arguments = arguments; let pipe = Pipe(); process.standardOutput = pipe; process.standardError = pipe; do { try process.run() } catch { throw MaintenanceRunnerError.launchFailed }; let data = pipe.fileHandleForReading.readDataToEndOfFile(); process.waitUntilExit(); output += String(data: data, encoding: .utf8) ?? ""; succeeded = succeeded && process.terminationStatus == 0 }; return MaintenanceExecutionResult(task: task, succeeded: succeeded, output: output.trimmingCharacters(in: .whitespacesAndNewlines)) } }
+public struct LocalMaintenanceRunner: Sendable { public init() {}; public func run(task: MaintenanceTask, volume: VolumeReference?) throws -> MaintenanceExecutionResult { try MaintenancePreflight().validate(task: task, volume: volume); let commands: [(String, [String])]; switch task { case .periodicScripts: commands = [("/usr/sbin/periodic", ["daily"]), ("/usr/sbin/periodic", ["weekly"]), ("/usr/sbin/periodic", ["monthly"])]; case .rebuildSpotlightIndex:
+        guard let volume else { throw MaintenanceRunnerError.rejected("Select a local volume first.") }
+        let path = volume.url.path
+        var cmds: [(String, [String])] = []
+        cmds.append(("/usr/bin/mdutil", ["-i", "on", path]))
+        cmds.append(("/usr/bin/mdutil", ["-E", path]))
+        if path == "/" {
+            let dataPath = "/System/Volumes/Data"
+            cmds.append(("/usr/bin/mdutil", ["-i", "on", dataPath]))
+            cmds.append(("/usr/bin/mdutil", ["-E", dataPath]))
+        }
+        commands = cmds
+    case .verifyVolume: guard let volume else { throw MaintenanceRunnerError.rejected("Select a local volume first.") }; commands = [("/usr/sbin/diskutil", ["verifyVolume", volume.url.path])] }; var output = ""; var succeeded = true; for (executable, arguments) in commands { let process = Process(); process.executableURL = URL(fileURLWithPath: executable); process.arguments = arguments; let pipe = Pipe(); process.standardOutput = pipe; process.standardError = pipe; do { try process.run() } catch { throw MaintenanceRunnerError.launchFailed }; let data = pipe.fileHandleForReading.readDataToEndOfFile(); process.waitUntilExit(); output += String(data: data, encoding: .utf8) ?? ""; succeeded = succeeded && process.terminationStatus == 0 }; return MaintenanceExecutionResult(task: task, succeeded: succeeded, output: output.trimmingCharacters(in: .whitespacesAndNewlines)) } }

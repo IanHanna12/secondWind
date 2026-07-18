@@ -129,8 +129,44 @@ final class StorageSnapshotTests: XCTestCase {
         XCTAssertEqual(recommendations.last?.title, "Older large file")
     }
 
-    private func entry(key: String, title: String, bytes: Int64, category: String = "Developer") -> StorageSnapshotEntry {
-        StorageSnapshotEntry(key: key, title: title, category: category, byteSize: bytes, risk: .safe, explanation: "Recreated on demand.", isActionable: true)
+    func testApplicationChangesAreDerivedFromApplicationAssociationsInSnapshots() {
+        let service = StorageSnapshotService(store: StorageSnapshotStore(fileURL: temporaryURL()))
+        let date = Date(timeIntervalSinceReferenceDate: 1_000)
+        let application = InstalledApplication(
+            url: URL(fileURLWithPath: "/Applications/Example.app"),
+            bundleIdentifier: "com.example.app",
+            displayName: "Example"
+        )
+        let association = ApplicationAssociation(
+            application: ApplicationIdentity(application: application),
+            relationship: .cache,
+            reason: "Associated by a known cache path for bundle identifier com.example.app.",
+            evidence: .knownPath
+        )
+        let previous = StorageSnapshot(
+            capturedAt: date,
+            totalBytes: 100_000_000,
+            availableBytes: 70_000_000,
+            entries: [entry(key: "cache", title: "Example cache", bytes: 10_000_000, associations: [association])]
+        )
+        let current = StorageSnapshot(
+            capturedAt: date.addingTimeInterval(60),
+            totalBytes: 100_000_000,
+            availableBytes: 64_000_000,
+            entries: [entry(key: "cache", title: "Example cache", bytes: 16_000_000, associations: [association])]
+        )
+
+        let report = service.report(for: current, history: [previous, current])
+
+        XCTAssertEqual(report.applicationChanges.first?.identity.bundleIdentifier, "com.example.app")
+        XCTAssertEqual(report.applicationChanges.first?.byteChange, 6_000_000)
+        XCTAssertEqual(report.applicationChanges.first?.currentBytes, 16_000_000)
+        XCTAssertEqual(report.applicationChanges.first?.entryChanges.map(\.key), ["cache"])
+        XCTAssertEqual(report.applicationChanges.first?.entryChanges.first?.kind, .grew)
+    }
+
+    private func entry(key: String, title: String, bytes: Int64, category: String = "Developer", associations: [ApplicationAssociation] = []) -> StorageSnapshotEntry {
+        StorageSnapshotEntry(key: key, title: title, category: category, byteSize: bytes, risk: .safe, explanation: "Recreated on demand.", isActionable: true, applicationAssociations: associations)
     }
 
     private func temporaryURL() -> URL {

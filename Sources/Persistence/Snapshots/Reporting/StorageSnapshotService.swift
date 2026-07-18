@@ -23,7 +23,8 @@ public struct StorageSnapshotService: Sendable {
                 explanation: entry.explanation,
                 isActionable: entry.isActionable,
                 countsTowardCategoryTotal: entry.countsTowardCategoryTotal,
-                modifiedAt: entry.modifiedAt
+                modifiedAt: entry.modifiedAt,
+                applicationAssociations: entry.applicationAssociations
             )
         }.sorted { $0.byteSize > $1.byteSize }
         return StorageSnapshot(capturedAt: inventory.capturedAt, totalBytes: totalBytes, availableBytes: availableBytes, entries: entries)

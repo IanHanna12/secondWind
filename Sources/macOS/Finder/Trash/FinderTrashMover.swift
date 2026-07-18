@@ -4,7 +4,7 @@ import SecondWindCore
 /// Uses the Finder-equivalent macOS recycle operation. Unlike a low-level
 /// filesystem move, this lets macOS present any required authorization and
 /// places the item in the current user's Finder Trash.
-public struct FinderTrashMover: TrashMoving {
+public struct FinderTrashMover: moveToTrash {
     public init() {}
 
     public func moveToTrash(_ url: URL) async throws {

@@ -88,6 +88,11 @@ struct CleanupScreen: View {
                                     Text(group.title)
                                     Spacer()
                                     Text(group.detail)
+                                    Button(group.actionTitle, systemImage: group.actionSymbol) {
+                                        model.addEligibleFindings(items)
+                                    }
+                                    .buttonStyle(.bordered)
+                                    .disabled(!group.isSelectable)
                                 }
                                 .font(.caption.weight(.semibold))
                                 .foregroundStyle(group.tint)
@@ -268,8 +273,8 @@ private enum CleanupFindingGroup: CaseIterable, Identifiable {
     var title: String {
         switch self {
         case .safe: return "Recreated automatically"
-        case .reviewRequired: return "Needs your review"
-        case .protected: return "Protected"
+        case .reviewRequired: return "Manual review"
+        case .protected: return "Sensitive & protected"
         }
     }
     var detail: String {
@@ -277,6 +282,20 @@ private enum CleanupFindingGroup: CaseIterable, Identifiable {
         case .safe: return "reversible"
         case .reviewRequired: return "select deliberately"
         case .protected: return "cannot be selected"
+        }
+    }
+    var isSelectable: Bool { self != .protected }
+    var actionTitle: String {
+        switch self {
+        case .safe: return "Select recreated"
+        case .reviewRequired: return "Select for review"
+        case .protected: return "Protected"
+        }
+    }
+    var actionSymbol: String {
+        switch self {
+        case .safe, .reviewRequired: return "plus.circle"
+        case .protected: return "lock.fill"
         }
     }
     var symbol: String {

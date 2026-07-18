@@ -1,22 +1,21 @@
 import Foundation
 import SecondWindCore
-import SecondWindMacOS
 
 /// Builds the current, read-only inventory from explicit locations only.
 /// It never walks arbitrary user data or turns an observed folder into a
 /// cleanup candidate.
-struct StorageInventoryObserver: @unchecked Sendable {
+public struct StorageInventoryObserver: @unchecked Sendable {
     let home: URL
     private let fileManager: FileManager
     private let fileSystem: LocalFileSystem
 
-    init(home: URL, fileManager: FileManager = .default) {
+    public init(home: URL, fileManager: FileManager = .default) {
         self.home = home.standardizedFileURL
         self.fileManager = fileManager
         fileSystem = LocalFileSystem(fileManager: fileManager)
     }
 
-    func observe(findings: [Finding], recoveryItems: [RecoveryItem]) -> StorageInventory {
+    public func observe(findings: [Finding], recoveryItems: [RecoveryItem], applications suppliedApplications: [InstalledApplication]? = nil) -> StorageInventory {
         let personalRoots = [
             (name: "Downloads", relativePath: "Downloads", category: StorageCategory.downloads),
             (name: "Documents", relativePath: "Documents", category: StorageCategory.documents),
@@ -34,9 +33,13 @@ struct StorageInventoryObserver: @unchecked Sendable {
             )
         }
         let folderEntries = roots.compactMap(personalFolderEntry)
-        let applicationEntries = ApplicationInventory(home: home, fileManager: fileManager).applications().map(applicationEntry)
+        let applications = suppliedApplications ?? InstalledApplicationInventory(home: home, fileManager: fileManager).applications()
+        let applicationEntries = applications.map(applicationEntry)
+        let relatedApplicationEntries = ApplicationStorageObserver(home: home, fileManager: fileManager).entries(for: applications)
         let recoveryEntries = recoveryItems.map(StorageInventoryEntry.init)
-        return StorageInventory(entries: findingEntries + folderEntries + applicationEntries + recoveryEntries)
+        let entries = deduplicatedByPath(findingEntries + folderEntries + applicationEntries + relatedApplicationEntries + recoveryEntries)
+        let inventory = StorageInventory(entries: entries)
+        return ApplicationAssociationResolver(home: home).resolve(inventory: inventory, applications: applications)
     }
 
     private func personalFolderEntry(name: String, url: URL, category: StorageCategory) -> StorageInventoryEntry? {
@@ -68,6 +71,21 @@ struct StorageInventoryObserver: @unchecked Sendable {
             isActionable: false,
             modifiedAt: modificationDate(at: app.url)
         )
+    }
+
+    private func deduplicatedByPath(_ entries: [StorageInventoryEntry]) -> [StorageInventoryEntry] {
+        var entriesByPath: [String: StorageInventoryEntry] = [:]
+        for entry in entries {
+            let key = entry.path ?? entry.key
+            guard let existing = entriesByPath[key] else {
+                entriesByPath[key] = entry
+                continue
+            }
+            if entry.isActionable && !existing.isActionable {
+                entriesByPath[key] = entry
+            }
+        }
+        return Array(entriesByPath.values)
     }
 
     private func modificationDate(at url: URL) -> Date? {

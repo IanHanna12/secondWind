@@ -9,8 +9,8 @@ packages:
 settings:
   base:
     PRODUCT_BUNDLE_IDENTIFIER: org.secondwind.app
-    MARKETING_VERSION: "0.3.0"
-    CURRENT_PROJECT_VERSION: 3
+    MARKETING_VERSION: "0.4.0"
+    CURRENT_PROJECT_VERSION: 4
     CODE_SIGN_STYLE: Automatic
     ENABLE_HARDENED_RUNTIME: YES
     SWIFT_VERSION: "5.9"
@@ -30,6 +30,8 @@ targets:
         product: SecondWindPersistence
       - package: SecondWindCore
         product: SecondWindMacOS
+      - package: SecondWindCore
+        product: SecondWindServices
     settings:
       base:
         INFOPLIST_FILE: Config/App-Info.plist

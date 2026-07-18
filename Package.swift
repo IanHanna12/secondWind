@@ -9,6 +9,7 @@ let package = Package(
         .library(name: "SecondWindApplication", targets: ["SecondWindApplication"]),
         .library(name: "SecondWindPersistence", targets: ["SecondWindPersistence"]),
         .library(name: "SecondWindMacOS", targets: ["SecondWindMacOS"]),
+        .library(name: "SecondWindServices", targets: ["SecondWindServices"]),
         .executable(name: "SecondWind", targets: ["SecondWindUI"])
     ],
     targets: [
@@ -16,7 +17,8 @@ let package = Package(
         .target(name: "SecondWindApplication", dependencies: ["SecondWindCore"], path: "Sources/Application"),
         .target(name: "SecondWindMacOS", dependencies: ["SecondWindCore"], path: "Sources/macOS"),
         .target(name: "SecondWindPersistence", dependencies: ["SecondWindCore", "SecondWindMacOS"], path: "Sources/Persistence"),
-        .executableTarget(name: "SecondWindUI", dependencies: ["SecondWindCore", "SecondWindApplication", "SecondWindPersistence", "SecondWindMacOS"], path: "Sources/UI"),
-        .testTarget(name: "SecondWindCoreTests", dependencies: ["SecondWindCore", "SecondWindApplication", "SecondWindPersistence", "SecondWindMacOS"], path: "Tests/SecondWindCoreTests")
+        .target(name: "SecondWindServices", dependencies: ["SecondWindCore", "SecondWindApplication", "SecondWindPersistence", "SecondWindMacOS"], path: "Sources/Services"),
+        .executableTarget(name: "SecondWindUI", dependencies: ["SecondWindCore", "SecondWindApplication", "SecondWindPersistence", "SecondWindMacOS", "SecondWindServices"], path: "Sources/UI"),
+        .testTarget(name: "SecondWindCoreTests", dependencies: ["SecondWindCore", "SecondWindApplication", "SecondWindPersistence", "SecondWindMacOS", "SecondWindServices"], path: "Tests/SecondWindCoreTests")
     ]
 )

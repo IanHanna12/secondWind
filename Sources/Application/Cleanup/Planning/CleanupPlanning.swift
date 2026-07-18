@@ -39,9 +39,19 @@ public struct PlanBuilder: Sendable {
             .filter { $0.action == .cleanup && $0.risk.isExecutable }
             .map(\.relativePath)
         let userRoots = ["Downloads", "Desktop"]
+        let orphanedApplicationStorageRoots = [
+            "Library/Application Support",
+            "Library/Caches",
+            "Library/Logs",
+            "Library/Containers",
+            "Library/Saved Application State",
+            "Library/Preferences"
+        ]
         let applicationRoots = ["Applications", "Library/Application Support", "Library/Caches", "Library/Logs"]
         let absoluteApplicationRoots = ["/Applications"]
-        let roots = cleanupRoots + userRoots + (action == .uninstall ? applicationRoots : [])
+        let roots = cleanupRoots + userRoots +
+            (action == .cleanup ? orphanedApplicationStorageRoots : []) +
+            (action == .uninstall ? applicationRoots : [])
         if action == .uninstall && absoluteApplicationRoots.contains(where: { path == $0 || path.hasPrefix($0 + "/") }) { return true }
         return roots.map { home.appendingPathComponent($0).path }.contains { path == $0 || path.hasPrefix($0 + "/") }
     }
@@ -69,10 +79,10 @@ public enum PlanExecutionError: LocalizedError, Equatable, Sendable {
 public struct PlanExecutor: Sendable {
     private let planBuilder: PlanBuilder
     private let recoveryRepository: any RecoveryRepository
-    private let trashMover: any TrashMoving
+    private let trashMover: any moveToTrash
     private let auditRecorder: any AuditRecording
 
-    public init(planBuilder: PlanBuilder, recoveryRepository: any RecoveryRepository, trashMover: any TrashMoving, auditRecorder: any AuditRecording) {
+    public init(planBuilder: PlanBuilder, recoveryRepository: any RecoveryRepository, trashMover: any moveToTrash, auditRecorder: any AuditRecording) {
         self.planBuilder = planBuilder
         self.recoveryRepository = recoveryRepository
         self.trashMover = trashMover

@@ -56,11 +56,16 @@ final class HelperDelegate: NSObject, NSXPCListenerDelegate {
     private let logger = Logger(subsystem: "org.secondwind.app", category: "privileged-helper")
 
     func listener(_ listener: NSXPCListener, shouldAcceptNewConnection connection: NSXPCConnection) -> Bool {
+        guard callerIsAllowed(connection) else { return false }
+
+        configure(connection)
+        connection.resume()
+        return true
+    }
+
+    private func callerIsAllowed(_ connection: NSXPCConnection) -> Bool {
         do {
             try callerValidator.validate(connection: connection)
-            connection.exportedInterface = NSXPCInterface(with: PrivilegedMaintenanceXPC.self)
-            connection.exportedObject = PrivilegedMaintenanceService(callerProcessIdentifier: connection.processIdentifier)
-            connection.resume()
             return true
         } catch {
             logger.error("Rejected XPC caller \(connection.processIdentifier, privacy: .public): \(error.localizedDescription, privacy: .public)")
@@ -68,6 +73,13 @@ final class HelperDelegate: NSObject, NSXPCListenerDelegate {
             // see the unavailable-helper error and write a local audit receipt.
             return false
         }
+    }
+
+    private func configure(_ connection: NSXPCConnection) {
+        connection.exportedInterface = NSXPCInterface(with: PrivilegedMaintenanceXPC.self)
+        connection.exportedObject = PrivilegedMaintenanceService(
+            callerProcessIdentifier: connection.processIdentifier
+        )
     }
 }
 

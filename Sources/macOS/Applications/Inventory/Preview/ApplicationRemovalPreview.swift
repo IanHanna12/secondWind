@@ -1,17 +1,5 @@
 import Foundation
-
-public struct InstalledApplication: Identifiable, Hashable, Sendable {
-    public let url: URL
-    public let bundleIdentifier: String?
-    public let displayName: String
-    public var id: String { url.path }
-
-    public init(url: URL, bundleIdentifier: String?, displayName: String) {
-        self.url = url
-        self.bundleIdentifier = bundleIdentifier
-        self.displayName = displayName
-    }
-}
+import SecondWindCore
 
 public enum AppSupportPathKind: String, Sendable {
     case applicationSupport

@@ -25,7 +25,7 @@
 		8668D572673C2599EFD62C6C /* StorageIntelligenceView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F8BEE60B5532683616190E76 /* StorageIntelligenceView.swift */; };
 		9D2DE66E2156DF4A50BAA378 /* PrivilegedMaintenanceHelper.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9F1E8846F5041B569EEBB508 /* PrivilegedMaintenanceHelper.swift */; };
 		B8875A731DA6C3743D955AC3 /* DashboardScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = F70D522EFD85E5C0417E0807 /* DashboardScreen.swift */; };
-		BCAE3B61BCEB2A470E365104 /* StorageInventoryObserver.swift in Sources */ = {isa = PBXBuildFile; fileRef = 229DAC7BDFA8565AA6AB0E01 /* StorageInventoryObserver.swift */; };
+		C9C710825F0884B19495C634 /* SecondWindServices in Frameworks */ = {isa = PBXBuildFile; productRef = 2D1CE3F61F6476BE65F24270 /* SecondWindServices */; };
 		CA19A9731EEE37E6EF12AE26 /* CleanupScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = DE2429354B712E959259B866 /* CleanupScreen.swift */; };
 		CB2AE08F86A1502E26F6AFC9 /* SecondWindPersistence in Frameworks */ = {isa = PBXBuildFile; productRef = E2594A5E7152DBFD8565BB45 /* SecondWindPersistence */; };
 		CCE359EB5612CA4CC0A53280 /* SecondWindCore in Frameworks */ = {isa = PBXBuildFile; productRef = 1CB16AB86ABD2C9BABA59F9D /* SecondWindCore */; };
@@ -46,7 +46,6 @@
 
 /* Begin PBXFileReference section */
 		05AAEF099B8B5E6E7C4428C4 /* StorageOutcomePreview.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StorageOutcomePreview.swift; sourceTree = "<group>"; };
-		229DAC7BDFA8565AA6AB0E01 /* StorageInventoryObserver.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StorageInventoryObserver.swift; sourceTree = "<group>"; };
 		513018696FD0BFA55B48E874 /* SystemMonitorScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SystemMonitorScreen.swift; sourceTree = "<group>"; };
 		615B22BD3F6E6A09D20EEE77 /* SecondWind.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = SecondWind.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		7100B740F322562C3293D07D /* README.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = README.md; sourceTree = "<group>"; };
@@ -63,7 +62,7 @@
 		C565F25F92B73B71D68BF370 /* RulesScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RulesScreen.swift; sourceTree = "<group>"; };
 		C57443188D3B7E4FFB0A871D /* ApplicationsScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ApplicationsScreen.swift; sourceTree = "<group>"; };
 		DE2429354B712E959259B866 /* CleanupScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CleanupScreen.swift; sourceTree = "<group>"; };
-		F049D4DEAD98146299C21124 /* SecondWindPrivilegedHelper */ = {isa = PBXFileReference; includeInIndex = 0; path = SecondWindPrivilegedHelper; sourceTree = BUILT_PRODUCTS_DIR; };
+		F049D4DEAD98146299C21124 /* SecondWindPrivilegedHelper */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = SecondWindPrivilegedHelper; sourceTree = BUILT_PRODUCTS_DIR; };
 		F70D522EFD85E5C0417E0807 /* DashboardScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DashboardScreen.swift; sourceTree = "<group>"; };
 		F8BEE60B5532683616190E76 /* StorageIntelligenceView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StorageIntelligenceView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
@@ -77,6 +76,7 @@
 				ECCF7E6E41EBBAA2B51F8678 /* SecondWindApplication in Frameworks */,
 				CB2AE08F86A1502E26F6AFC9 /* SecondWindPersistence in Frameworks */,
 				3E71BB7C561F48205582D33D /* SecondWindMacOS in Frameworks */,
+				C9C710825F0884B19495C634 /* SecondWindServices in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -267,7 +267,6 @@
 			children = (
 				7809DF4512FF0C1A3C873B3D /* DeveloperStorageScreen.swift */,
 				F8BEE60B5532683616190E76 /* StorageIntelligenceView.swift */,
-				229DAC7BDFA8565AA6AB0E01 /* StorageInventoryObserver.swift */,
 				05AAEF099B8B5E6E7C4428C4 /* StorageOutcomePreview.swift */,
 			);
 			path = Storage;
@@ -325,6 +324,7 @@
 				D0A11468837E8124DC1F3675 /* SecondWindApplication */,
 				E2594A5E7152DBFD8565BB45 /* SecondWindPersistence */,
 				1999021E85B8F7A6F10392C4 /* SecondWindMacOS */,
+				2D1CE3F61F6476BE65F24270 /* SecondWindServices */,
 			);
 			productName = SecondWind;
 			productReference = 615B22BD3F6E6A09D20EEE77 /* SecondWind.app */;
@@ -425,7 +425,6 @@
 				4EB0B0989DEC7532E8A594F1 /* SettingsScreen.swift in Sources */,
 				0FD51ED36DAD5B3AE0EA9733 /* SharedViews.swift in Sources */,
 				8668D572673C2599EFD62C6C /* StorageIntelligenceView.swift in Sources */,
-				BCAE3B61BCEB2A470E365104 /* StorageInventoryObserver.swift in Sources */,
 				22D445D4B849707415B9DBE4 /* StorageOutcomePreview.swift in Sources */,
 				55F7050B50DDB81F2C56C40C /* SystemMonitorScreen.swift in Sources */,
 				7760F1B5BFCF2B620A5F8445 /* SystemTasksView.swift in Sources */,
@@ -457,7 +456,9 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				CODE_SIGN_ENTITLEMENTS = Config/PrivilegedMaintenanceHelper.entitlements;
+				CODE_SIGN_IDENTITY = "Apple Development";
 				COMBINE_HIDPI_IMAGES = YES;
+				DEVELOPMENT_TEAM = 33474MTKLP;
 				INFOPLIST_FILE = "Config/Helper-Info.plist";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -473,7 +474,9 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				CODE_SIGN_ENTITLEMENTS = Config/PrivilegedMaintenanceHelper.entitlements;
+				CODE_SIGN_IDENTITY = "Apple Development";
 				COMBINE_HIDPI_IMAGES = YES;
+				DEVELOPMENT_TEAM = 33474MTKLP;
 				INFOPLIST_FILE = "Config/Helper-Info.plist";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -520,7 +523,7 @@
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				CODE_SIGN_STYLE = Automatic;
 				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = 3;
+				CURRENT_PROJECT_VERSION = 4;
 				DEBUG_INFORMATION_FORMAT = dwarf;
 				ENABLE_HARDENED_RUNTIME = YES;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
@@ -540,7 +543,7 @@
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				MACOSX_DEPLOYMENT_TARGET = 15.0;
-				MARKETING_VERSION = 0.3.0;
+				MARKETING_VERSION = 0.4.0;
 				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
 				MTL_FAST_MATH = YES;
 				ONLY_ACTIVE_ARCH = YES;
@@ -588,7 +591,7 @@
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				CODE_SIGN_STYLE = Automatic;
 				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = 3;
+				CURRENT_PROJECT_VERSION = 4;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				ENABLE_HARDENED_RUNTIME = YES;
 				ENABLE_NS_ASSERTIONS = NO;
@@ -602,7 +605,7 @@
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				MACOSX_DEPLOYMENT_TARGET = 15.0;
-				MARKETING_VERSION = 0.3.0;
+				MARKETING_VERSION = 0.4.0;
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
 				PRODUCT_BUNDLE_IDENTIFIER = org.secondwind.app;
@@ -619,7 +622,9 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_ENTITLEMENTS = Config/SecondWind.entitlements;
+				CODE_SIGN_IDENTITY = "Apple Development";
 				COMBINE_HIDPI_IMAGES = YES;
+				DEVELOPMENT_TEAM = 33474MTKLP;
 				INFOPLIST_FILE = "Config/App-Info.plist";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -635,7 +640,9 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_ENTITLEMENTS = Config/SecondWind.entitlements;
+				CODE_SIGN_IDENTITY = "Apple Development";
 				COMBINE_HIDPI_IMAGES = YES;
+				DEVELOPMENT_TEAM = 33474MTKLP;
 				ENABLE_DEBUG_DYLIB = NO;
 				INFOPLIST_FILE = "Config/App-Info.plist";
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -698,6 +705,10 @@
 		291F00C17576688A510538F5 /* SecondWindMacOS */ = {
 			isa = XCSwiftPackageProductDependency;
 			productName = SecondWindMacOS;
+		};
+		2D1CE3F61F6476BE65F24270 /* SecondWindServices */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = SecondWindServices;
 		};
 		58366003EC745FC5EFADB355 /* SecondWindCore */ = {
 			isa = XCSwiftPackageProductDependency;

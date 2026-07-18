@@ -19,6 +19,6 @@ public protocol AuditRecording: Sendable {
     func append(_ record: AuditRecord) throws
 }
 
-public protocol TrashMoving: Sendable {
+public protocol moveToTrash: Sendable {
     func moveToTrash(_ url: URL) async throws
 }

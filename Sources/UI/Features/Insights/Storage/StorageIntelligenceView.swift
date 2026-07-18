@@ -1,6 +1,7 @@
 import SwiftUI
 import SecondWindCore
 import SecondWindPersistence
+import SecondWindServices
 
 /// The storage feature's single composing view. Its child views are focused
 /// specifications of the same current inventory and its local history.

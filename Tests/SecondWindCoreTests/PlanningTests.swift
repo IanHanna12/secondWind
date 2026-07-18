@@ -64,6 +64,32 @@ final class PlanningTests: XCTestCase {
         XCTAssertEqual(plan.actions.map(\.sourcePath), [app.path])
     }
 
+    func testReviewedOrphanedApplicationStorageCanEnterEitherCleanupPlan() throws {
+        let home = URL(fileURLWithPath: "/fixture-home")
+        let orphan = Finding(
+            ruleID: "orphaned-application-storage",
+            ruleVersion: 1,
+            title: "Possible orphan: com.example.legacy",
+            path: home.appendingPathComponent("Library/Containers/com.example.legacy").path,
+            byteSize: 1,
+            category: .applications,
+            origin: "test",
+            explanation: "test",
+            risk: .reviewRequired,
+            supportedAction: .cleanup,
+            confidence: .needsUserReview
+        )
+
+        for destination in [PlanDestination.recovery, .finderTrash] {
+            let plan = try PlanBuilder(home: home).makePlan(
+                findings: [orphan],
+                selectedIDs: [orphan.id],
+                destination: destination
+            )
+            XCTAssertEqual(plan.actions.map(\.sourcePath), [orphan.path])
+        }
+    }
+
     func testPartialFailureReportsCompletedAndFailedPathsInAudit() async throws {
         let root = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
         defer { try? FileManager.default.removeItem(at: root) }
@@ -112,7 +138,7 @@ final class PlanningTests: XCTestCase {
     }
 }
 
-private actor FailOnSecondTrash: TrashMoving {
+private actor FailOnSecondTrash: moveToTrash {
     private var calls = 0
 
     func moveToTrash(_ url: URL) async throws {

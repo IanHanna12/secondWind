@@ -7,6 +7,7 @@ import SecondWindCore
 import SecondWindApplication
 import SecondWindMacOS
 import SecondWindPersistence
+import SecondWindServices
 
 @main
 struct SecondWindMain {
@@ -50,53 +51,6 @@ struct CleanupCompletion {
     let destination: PlanDestination
 }
 
-struct StorageScanSummary: Sendable {
-    let completedAt: Date
-    let duration: TimeInterval
-    let findingCount: Int
-    let eligibleCount: Int
-    let reviewRequiredCount: Int
-    let protectedCount: Int
-    let observedBytes: Int64
-    let observedLocationCount: Int
-
-    init(findings: [Finding], inventory: StorageInventory, startedAt: Date, completedAt: Date = Date()) {
-        self.completedAt = completedAt
-        duration = completedAt.timeIntervalSince(startedAt)
-        findingCount = findings.count
-        eligibleCount = findings.filter { $0.risk.isExecutable && $0.supportedAction != .none }.count
-        reviewRequiredCount = findings.filter { $0.risk == .reviewRequired }.count
-        protectedCount = findings.filter { $0.risk == .protected || $0.supportedAction == .none }.count
-        observedBytes = inventory.entries.filter(\.countsTowardCategoryTotal).reduce(0) { $0 + $1.byteSize }
-        observedLocationCount = inventory.entries.count
-    }
-}
-
-private final class ScanUIBridge: @unchecked Sendable {
-    private let receiveProgress: @MainActor @Sendable (ScanProgress) -> Void
-    private let receiveCompletion: @MainActor @Sendable ([Finding], StorageInventory, StorageSnapshotReport, StorageScanSummary) -> Void
-
-    init(
-        receiveProgress: @escaping @MainActor @Sendable (ScanProgress) -> Void,
-        receiveCompletion: @escaping @MainActor @Sendable ([Finding], StorageInventory, StorageSnapshotReport, StorageScanSummary) -> Void
-    ) {
-        self.receiveProgress = receiveProgress
-        self.receiveCompletion = receiveCompletion
-    }
-
-    func report(_ progress: ScanProgress) {
-        Task { @MainActor in
-            receiveProgress(progress)
-        }
-    }
-
-    func complete(findings: [Finding], inventory: StorageInventory, report: StorageSnapshotReport, summary: StorageScanSummary) {
-        Task { @MainActor in
-            receiveCompletion(findings, inventory, report, summary)
-        }
-    }
-}
-
 @MainActor @Observable final class SecondWindViewModel {
     var findings: [Finding] = []
     var selectedIDs: Set<UUID> = []
@@ -109,6 +63,7 @@ private final class ScanUIBridge: @unchecked Sendable {
     var snapshot: DashboardSnapshot
     var liveMetrics: LiveSystemMetrics
     var applications: [InstalledApplication] = []
+    var applicationStorage = ApplicationInventory(storageInventory: StorageInventory(entries: []), applications: [])
     var applicationPreview: ApplicationRemovalPreview?
     var isLoadingApplicationPreview = false
     private var inspectedApplicationID: String?
@@ -123,7 +78,8 @@ private final class ScanUIBridge: @unchecked Sendable {
     private let recoveryStore: RecoveryStore
     private let monitorService: MonitorService
     private let liveMetricsService: LiveMetricsService
-    private let storageSnapshotService = StorageSnapshotService()
+    private let storageScanService: any StorageScanning
+    private let applicationInventoryBuilder = ApplicationInventoryBuilder()
     private let preferenceService = PreferenceService()
     private let rulePolicyStore = RulePolicyStore()
     private var scanTask: Task<Void, Never>?
@@ -136,6 +92,7 @@ private final class ScanUIBridge: @unchecked Sendable {
         self.monitorService = monitorService
         self.auditStore = auditStore
         self.recoveryStore = recoveryStore
+        self.storageScanService = LocalStorageScanService(auditRecorder: auditStore)
         self.liveMetricsService = LiveMetricsService()
         self.snapshot = monitorService.snapshot()
         self.auditRecords = auditStore.records()
@@ -148,48 +105,41 @@ private final class ScanUIBridge: @unchecked Sendable {
         let scanID = UUID()
         activeScanID = scanID
         isScanning = true
-        let scanStartedAt = Date()
         let rules = rulePolicyStore.effectiveRules()
-        scanProgress = .init(completedUnits: 0, totalUnits: rules.count + 3, currentTitle: "Preparing local scan")
-        let totalBytes = snapshot.storageTotal
-        let availableBytes = snapshot.storageAvailable
-        let snapshotService = storageSnapshotService
-        let bridge = ScanUIBridge(
-            receiveProgress: { [weak self] progress in
-                guard self?.activeScanID == scanID else { return }
-                self?.scanProgress = progress
-            },
-            receiveCompletion: { [weak self] results, inventory, report, summary in
-                guard self?.activeScanID == scanID else { return }
-                self?.findings = results
-                self?.storageInventory = inventory
-                self?.storageSnapshots = report
-                self?.latestScanSummary = summary
-                self?.selectedIDs.formIntersection(Set(results.map(\.id)))
-                self?.isScanning = false
-                self?.scanProgress = nil
-                self?.activeScanID = nil
-                self?.scanTask = nil
-                self?.refreshActivity()
-            }
+        let request = StorageScanRequest(
+            home: home,
+            rules: rules,
+            recoveryItems: recoveryItems,
+            totalBytes: snapshot.storageTotal,
+            availableBytes: snapshot.storageAvailable
         )
-        let currentRecoveryItems = recoveryItems
-        scanTask = Task.detached { [home, auditStore, totalBytes, availableBytes, snapshotService, bridge, rules, currentRecoveryItems, scanStartedAt] in
-            let localFileSystem = LocalFileSystem()
-            let outcome = CleanupScanner(home: home, fileSystem: localFileSystem, rules: rules).scan { progress in
-                guard !Task.isCancelled else { return false }
-                bridge.report(progress)
-                return true
+        let storageScanService = storageScanService
+        scanTask = Task { [weak self, storageScanService, request] in
+            for await event in storageScanService.events(for: request) {
+                guard let self, self.activeScanID == scanID else { return }
+                switch event {
+                case let .progress(progress):
+                    self.scanProgress = progress
+                case let .completed(result):
+                    self.apply(result)
+                }
             }
-            guard case let .completed(results) = outcome, !Task.isCancelled else { return }
-            bridge.report(.init(completedUnits: rules.count + 3, totalUnits: rules.count + 3, currentTitle: "Finishing scan"))
-            try? auditStore.append(.init(kind: .scan, ruleVersions: Array(Set(results.map { "\($0.ruleID) v\($0.ruleVersion)" })).sorted(), paths: results.map(\.path), bytes: results.reduce(0) { $0 + $1.byteSize }, result: "\(results.count) findings"))
-            let inventory = StorageInventoryObserver(home: home).observe(findings: results, recoveryItems: currentRecoveryItems)
-            let snapshot = snapshotService.capture(inventory: inventory, totalBytes: totalBytes, availableBytes: availableBytes)
-            let history = (try? snapshotService.store.append(snapshot)) ?? snapshotService.store.snapshots()
-            let report = snapshotService.report(for: snapshot, history: history)
-            bridge.complete(findings: results, inventory: inventory, report: report, summary: StorageScanSummary(findings: results, inventory: inventory, startedAt: scanStartedAt))
         }
+    }
+
+    private func apply(_ result: StorageScanResult) {
+        findings = result.findings
+        applications = result.applications
+        storageInventory = result.inventory
+        applicationStorage = applicationInventoryBuilder.build(storageInventory: result.inventory, applications: result.applications)
+        storageSnapshots = result.snapshotReport
+        latestScanSummary = result.summary
+        selectedIDs.formIntersection(Set(result.findings.map(\.id)))
+        isScanning = false
+        scanProgress = nil
+        activeScanID = nil
+        scanTask = nil
+        refreshActivity()
     }
     func cancelScan() {
         scanTask?.cancel()
@@ -363,11 +313,35 @@ private final class ScanUIBridge: @unchecked Sendable {
         selectFindings(updated)
     }
     func selectSafeFindings(_ candidates: [Finding]) {
-        let safeIDs = candidates.filter { $0.risk == .safe && $0.supportedAction != .none }.map(\.id)
-        selectFindings(selectedIDs.union(safeIDs))
+        addEligibleFindings(candidates.filter { $0.risk == .safe })
+    }
+    func addEligibleFindings(_ candidates: [Finding]) {
+        let candidateIDs = candidates
+            .filter { candidate in
+                findings.contains(where: { $0.id == candidate.id }) &&
+                    candidate.risk.isExecutable && candidate.supportedAction != .none
+            }
+            .map(\.id)
+        selectFindings(selectedIDs.union(candidateIDs))
     }
     func clearSelection() { selectedIDs.removeAll() }
-    func loadApplications() { applications = ApplicationInventory(home: home).applications() }
+    func loadApplications() {
+        applications = InstalledApplicationInventory(home: home).applications()
+        applicationStorage = applicationInventoryBuilder.build(storageInventory: storageInventory, applications: applications)
+    }
+
+    func selectApplicationStorageEntries(_ entries: [ApplicationEntry]) {
+        let paths = Set(entries.compactMap(\.storage.path))
+        let matchingFindingIDs = findings
+            .filter { paths.contains($0.path) }
+            .map(\.id)
+        selectFindings(selectedIDs.union(matchingFindingIDs))
+        if matchingFindingIDs.isEmpty {
+            message = "These known application paths are protected or are not current cleanup findings. No items were added to the plan."
+        } else {
+            message = "Added \(matchingFindingIDs.count) eligible application item(s) to the existing cleanup selection."
+        }
+    }
     func inspectApplication(_ app: InstalledApplication) {
         inspectedApplicationID = app.id
         applicationPreview = nil
@@ -375,14 +349,14 @@ private final class ScanUIBridge: @unchecked Sendable {
         let home = home
         Task { [weak self, app, home] in
             let preview = await Task.detached {
-                ApplicationInventory(home: home).removalPreview(for: app)
+                InstalledApplicationInventory(home: home).removalPreview(for: app)
             }.value
             guard self?.inspectedApplicationID == app.id else { return }
             self?.applicationPreview = preview
             self?.isLoadingApplicationPreview = false
         }
     }
-    func prepareUninstall(_ app: InstalledApplication) { let candidates = ApplicationInventory(home: home).uninstallFindings(for: app); findings = candidates; selectedIDs = Set(candidates.filter { $0.risk.isExecutable && $0.supportedAction == .uninstall }.map(\.id)); message = "Removal plan prepared for \(app.displayName). Open Clean Up to review every affected path." }
+    func prepareUninstall(_ app: InstalledApplication) { let candidates = InstalledApplicationInventory(home: home).uninstallFindings(for: app); findings = candidates; selectedIDs = Set(candidates.filter { $0.risk.isExecutable && $0.supportedAction == .uninstall }.map(\.id)); message = "Removal plan prepared for \(app.displayName). Open Clean Up to review every affected path." }
     func restore(_ item: RecoveryItem) { do { let destination = try recoveryStore.restore(item); try? auditStore.append(.init(kind: .restore, planID: item.planID, ruleVersions: [], paths: [destination.path], bytes: item.byteSize, destination: .recovery, result: "restored")); refreshActivity(); scan(); message = "Restored to \(destination.path)" } catch { message = error.localizedDescription } }
     func deletePermanently(_ item: RecoveryItem) {
         do {

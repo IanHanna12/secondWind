@@ -7,12 +7,37 @@ behind any change, use the linked Git commit.
 
 ## Current public development version
 
-**0.3.0** — Storage intelligence. A shared local inventory now powers storage
-categories, a category explorer, scan summaries, and comparison with the
-previous snapshot. Interfaces, rules, and stored formats may still change
-incompatibly.
+**0.4.0** — Application storage inventory and reviewed cleanup. Installed
+applications and possible orphaned data are explainable projections of the
+same local storage inventory and snapshot history. Interfaces, rules, and
+stored formats may still change incompatibly.
 
 ## 18 July 2026
+
+- Applications now groups known inventory entries by installed application,
+  separating application bundles, related data, and total known storage without
+  presenting bundle size as the full footprint.
+- Every displayed relationship includes its exact known path, its association
+  reason, evidence, data kind, and current cleanup status. Associations do not
+  change an existing entry's eligibility or protection.
+- Exact bundle-identifier paths without a matching installed application are
+  shown as possible orphaned data requiring review. They can enter the normal
+  cleanup plan, where Recovery is the default destination. Name matches,
+  ambiguous paths, shared resources, and unknown locations remain protected.
+- Application storage changes compare the same persisted inventory snapshots
+  used by Storage history; no second application-history system is created.
+- Application-specific selection only chooses existing eligible findings, then
+  continues through the normal review, confirmation, Finder Trash, or Recovery
+  workflow.
+- Storage scanning is now coordinated by `SecondWindServices` rather than the
+  SwiftUI view model. The service owns the detached filesystem worker and
+  emits progress and completion events; UI state remains on the Main Actor.
+
+### Earlier the same day
+
+- Storage intelligence: a shared local inventory now powers storage
+  categories, a category explorer, scan summaries, and comparison with the
+  previous snapshot.
 
 - Storage overview groups known local storage into explainable categories,
   including Applications, Downloads, Documents, Developer Storage, Caches,

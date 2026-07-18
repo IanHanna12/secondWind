@@ -2,7 +2,7 @@ import Darwin
 import Foundation
 import SecondWindCore
 
-public struct ApplicationInventory: @unchecked Sendable {
+public struct InstalledApplicationInventory: @unchecked Sendable {
     private let fileManager: FileManager
     private let home: URL
 
@@ -17,9 +17,19 @@ public struct ApplicationInventory: @unchecked Sendable {
             .filter { $0.pathExtension == "app" }
             .map { url in
                 let bundle = Bundle(url: url)
-                return InstalledApplication(url: url, bundleIdentifier: bundle?.bundleIdentifier, displayName: (bundle?.object(forInfoDictionaryKey: "CFBundleDisplayName") as? String) ?? url.deletingPathExtension().lastPathComponent)
+                return InstalledApplication(
+                    url: url,
+                    bundleIdentifier: bundle?.bundleIdentifier,
+                    displayName: (bundle?.object(forInfoDictionaryKey: "CFBundleDisplayName") as? String) ?? url.deletingPathExtension().lastPathComponent,
+                    version: bundle?.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String,
+                    build: bundle?.object(forInfoDictionaryKey: "CFBundleVersion") as? String
+                )
             }
             .sorted { $0.displayName.localizedStandardCompare($1.displayName) == .orderedAscending }
+    }
+
+    public func discoverApplications() -> [InstalledApplication] {
+        applications()
     }
 
     public func remnants(for app: InstalledApplication) -> [AppRemnant] {
@@ -76,3 +86,5 @@ public struct ApplicationInventory: @unchecked Sendable {
     private func fileFlags(at url: URL) -> UInt32 { var information = stat(); guard lstat(url.path, &information) == 0 else { return 0 }; return UInt32(information.st_flags) }
     private func hasExtendedACL(at url: URL) -> Bool { let list = url.path.withCString { acl_get_file($0, ACL_TYPE_EXTENDED) }; guard let list else { return false }; defer { acl_free(UnsafeMutableRawPointer(list)) }; var entry: acl_entry_t?; return acl_get_entry(list, 0, &entry) == 0 }
 }
+
+extension InstalledApplicationInventory: ApplicationDiscovering {}
