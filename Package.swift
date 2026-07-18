@@ -7,18 +7,16 @@ let package = Package(
     products: [
         .library(name: "SecondWindCore", targets: ["SecondWindCore"]),
         .library(name: "SecondWindApplication", targets: ["SecondWindApplication"]),
-        .library(name: "SecondWindSystem", targets: ["SecondWindSystem"]),
         .library(name: "SecondWindPersistence", targets: ["SecondWindPersistence"]),
-        .library(name: "SecondWindPlatform", targets: ["SecondWindPlatform"]),
-        .executable(name: "SecondWind", targets: ["SecondWind"])
+        .library(name: "SecondWindMacOS", targets: ["SecondWindMacOS"]),
+        .executable(name: "SecondWind", targets: ["SecondWindUI"])
     ],
     targets: [
-        .target(name: "SecondWindCore", path: "Sources/SecondWindCore"),
-        .target(name: "SecondWindApplication", dependencies: ["SecondWindCore"], path: "Sources/SecondWindApplication"),
-        .target(name: "SecondWindSystem", dependencies: ["SecondWindCore"], path: "Sources/SecondWindSystem"),
-        .target(name: "SecondWindPersistence", dependencies: ["SecondWindCore", "SecondWindSystem"], path: "Sources/SecondWindPersistence"),
-        .target(name: "SecondWindPlatform", dependencies: ["SecondWindCore", "SecondWindSystem"], path: "Sources/SecondWindPlatform"),
-        .executableTarget(name: "SecondWind", dependencies: ["SecondWindCore", "SecondWindApplication", "SecondWindSystem", "SecondWindPersistence", "SecondWindPlatform"], path: "Sources/CLI"),
-        .testTarget(name: "SecondWindCoreTests", dependencies: ["SecondWindCore", "SecondWindApplication", "SecondWindSystem", "SecondWindPersistence", "SecondWindPlatform"], path: "Tests/SecondWindCoreTests")
+        .target(name: "SecondWindCore", path: "Sources/Core"),
+        .target(name: "SecondWindApplication", dependencies: ["SecondWindCore"], path: "Sources/Application"),
+        .target(name: "SecondWindMacOS", dependencies: ["SecondWindCore"], path: "Sources/macOS"),
+        .target(name: "SecondWindPersistence", dependencies: ["SecondWindCore", "SecondWindMacOS"], path: "Sources/Persistence"),
+        .executableTarget(name: "SecondWindUI", dependencies: ["SecondWindCore", "SecondWindApplication", "SecondWindPersistence", "SecondWindMacOS"], path: "Sources/UI"),
+        .testTarget(name: "SecondWindCoreTests", dependencies: ["SecondWindCore", "SecondWindApplication", "SecondWindPersistence", "SecondWindMacOS"], path: "Tests/SecondWindCoreTests")
     ]
 )

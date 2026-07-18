@@ -2,7 +2,7 @@ import Foundation
 import SecondWindCore
 import SecondWindApplication
 import SecondWindPersistence
-import SecondWindPlatform
+import SecondWindMacOS
 
 enum VerificationError: Error { case failed(String) }
 func check(_ value: @autoclosure () -> Bool, _ message: String) throws { if !value() { throw VerificationError.failed(message) } }

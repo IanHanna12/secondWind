@@ -1,7 +1,7 @@
 import Foundation
 import XCTest
 @testable import SecondWindCore
-@testable import SecondWindPlatform
+@testable import SecondWindMacOS
 
 final class PrivilegedMaintenanceContractTests: XCTestCase {
     private let request = PrivilegedMaintenanceRequest(task: .periodicScripts, volumeUUID: nil)

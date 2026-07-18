@@ -26,13 +26,13 @@ choices.
 ## In the app
 
 <p>
-  <img src="Docs/Screenshots/home.png" alt="Second Wind home dashboard" width="49%">
-  <img src="Docs/Screenshots/cleanup.png" alt="Granular cleanup review" width="49%">
+  <img src="Docs/Screenshots/home-storage-overview.png" alt="Second Wind home storage overview" width="49%">
+  <img src="Docs/Screenshots/cleanup-selection.png" alt="Cleanup candidate selection" width="49%">
 </p>
 
 <p>
-  <img src="Docs/Screenshots/cleanup-confirmation.png" alt="Final cleanup confirmation" width="49%">
-  <img src="Docs/Screenshots/recovery.png" alt="Recovery storage and local activity" width="49%">
+  <img src="Docs/Screenshots/cleanup-final-review.png" alt="Final cleanup review" width="49%">
+  <img src="Docs/Screenshots/recovery-activity.png" alt="Recovery storage and local activity" width="49%">
 </p>
 
 <p>
@@ -104,7 +104,7 @@ paths.
 
 To test it locally, open `Xcode/SecondWind.xcworkspace`, select the same
 signing team for both targets, build the **App** scheme, then enable the helper
-from System tasks. See the [helper notes](Optional/SecondWindPrivilegedHelper/README.md)
+from System tasks. See the [helper notes](Sources/PrivilegedHelperService/README.md)
 for its boundary and local test path.
 
 ## Development

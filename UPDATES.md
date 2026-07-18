@@ -54,8 +54,8 @@ incompatibly.
 - [Source organization](https://github.com/IanHanna12/secondWind/commit/e28d58f):
   replaced the broad Infrastructure and Snapshots modules with System and
   Persistence, and grouped source by precise responsibility.
-  Examples include Applications/Inventory/Preview, Applications/Removal/Trash,
-  System/Resolver/Process, and Persistence/Snapshots/Storage.
+  Examples include macOS/Applications/Inventory/Preview, macOS/Finder/Trash,
+  macOS/Processes, and Persistence/Snapshots/Storage.
 - [Build identity](https://github.com/IanHanna12/secondWind/commit/e990f7c):
   Xcode-built apps show their source revision and build time in Settings. A
   build made with local uncommitted changes is clearly marked as dirty.
