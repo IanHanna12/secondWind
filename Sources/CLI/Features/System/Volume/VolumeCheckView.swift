@@ -2,7 +2,7 @@ import SwiftUI
 import SecondWindCore
 import SecondWindPlatform
 
-struct VolumeCheckView: View {
+struct VolumeCheckScreen: View {
     let model: SecondWindViewModel
     @State private var state = VolumeCheckState()
 

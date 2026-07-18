@@ -8,9 +8,9 @@
 
 /* Begin PBXBuildFile section */
 		006DCED917E8DC60E97A90D3 /* SecondWindApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = BDCDA961DC2B7282C1825686 /* SecondWindApp.swift */; };
-		038740D59FEC51BCFFD15A44 /* HistoryRecoverySettingsViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = 15EFFB0D3C66F913F070F8AF /* HistoryRecoverySettingsViews.swift */; };
-		A1B2C3D4E5F60718293A4B5C /* RulesView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1C2D3E4F5061728394A5B6C /* RulesView.swift */; };
-		1BD88E388D9938A493F5BF43 /* StorageHistoryViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9035E9CD2FB646DD3ABCF048 /* StorageHistoryViews.swift */; };
+		038740D59FEC51BCFFD15A44 /* RecoveryActivityScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = 15EFFB0D3C66F913F070F8AF /* RecoveryActivityScreen.swift */; };
+		A1B2C3D4E5F60718293A4B5C /* RulesScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1C2D3E4F5061728394A5B6C /* RulesScreen.swift */; };
+		1BD88E388D9938A493F5BF43 /* StorageIntelligenceView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9035E9CD2FB646DD3ABCF048 /* StorageIntelligenceView.swift */; };
 		1D04756F7DB4B5FA7C9EEC71 /* SecondWindPrivilegedHelper in Resources */ = {isa = PBXBuildFile; fileRef = F049D4DEAD98146299C21124 /* SecondWindPrivilegedHelper */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		1ED357BC70942742C70FE38C /* SecondWindPlatform in Frameworks */ = {isa = PBXBuildFile; productRef = 8072990C72A3298B3BE47817 /* SecondWindPlatform */; };
 		23F2823147F5C3B0A2F8EA87 /* README.md in Resources */ = {isa = PBXBuildFile; fileRef = 86FF89D7D4F4F90B5F844CE5 /* README.md */; };
@@ -21,7 +21,14 @@
 		53FDA34A851503806609CD09 /* SecondWindCore in Frameworks */ = {isa = PBXBuildFile; productRef = 58366003EC745FC5EFADB355 /* SecondWindCore */; };
 		8410EC36E22EB6109B554A53 /* SystemTasksView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9C62E1457EBE9824728FE5D8 /* SystemTasksView.swift */; };
 		858194504A7DF84F5685E1C2 /* VolumeCheckState.swift in Sources */ = {isa = PBXBuildFile; fileRef = C0E6E629D3D22096721FEB80 /* VolumeCheckState.swift */; };
-		9BC8E40E9D8545915C7A5AEC /* ApplicationsViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = CB4C7177097BE1C3DA08DC58 /* ApplicationsViews.swift */; };
+		9BC8E40E9D8545915C7A5AEC /* ApplicationsScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = CB4C7177097BE1C3DA08DC58 /* ApplicationsScreen.swift */; };
+		E3A934F418A84609BA01A001 /* SettingsScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = E3A934F418A84609BA01A002 /* SettingsScreen.swift */; };
+		E3A934F418A84609BA01A003 /* DashboardScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = E3A934F418A84609BA01A004 /* DashboardScreen.swift */; };
+		E3A934F418A84609BA01A005 /* CleanupScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = E3A934F418A84609BA01A006 /* CleanupScreen.swift */; };
+		E3A934F418A84609BA01A007 /* SystemMonitorScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = E3A934F418A84609BA01A008 /* SystemMonitorScreen.swift */; };
+		E3A934F418A84609BA01A009 /* StorageOutcomePreview.swift in Sources */ = {isa = PBXBuildFile; fileRef = E3A934F418A84609BA01A010 /* StorageOutcomePreview.swift */; };
+		E3A934F418A84609BA01A011 /* StorageInventoryObserver.swift in Sources */ = {isa = PBXBuildFile; fileRef = E3A934F418A84609BA01A012 /* StorageInventoryObserver.swift */; };
+		E3A934F418A84609BA01A013 /* DeveloperStorageScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = E3A934F418A84609BA01A014 /* DeveloperStorageScreen.swift */; };
 		C9C710825F0884B19495C634 /* SecondWindPersistence in Frameworks */ = {isa = PBXBuildFile; productRef = CA7B5FC4202CBA4B3C47C06F /* SecondWindPersistence */; };
 		CB2AE08F86A1502E26F6AFC9 /* SecondWindSystem in Frameworks */ = {isa = PBXBuildFile; productRef = 0BC94FC48CE1DFB33442F0C3 /* SecondWindSystem */; };
 		CCE359EB5612CA4CC0A53280 /* SecondWindCore in Frameworks */ = {isa = PBXBuildFile; productRef = 1CB16AB86ABD2C9BABA59F9D /* SecondWindCore */; };
@@ -40,18 +47,25 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
-		15EFFB0D3C66F913F070F8AF /* HistoryRecoverySettingsViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Features/History/HistoryRecoverySettingsViews.swift; sourceTree = "<group>"; };
+		15EFFB0D3C66F913F070F8AF /* RecoveryActivityScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Features/Insights/Recovery/RecoveryActivityScreen.swift; sourceTree = "<group>"; };
 		5B1EC2A6BB5EE27D4EDC40AB /* VolumeCheckView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Features/System/Volume/VolumeCheckView.swift; sourceTree = "<group>"; };
 		615B22BD3F6E6A09D20EEE77 /* SecondWind.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = SecondWind.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		86FF89D7D4F4F90B5F844CE5 /* README.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = README.md; sourceTree = "<group>"; };
 		8F1FE84BBFC48762759BA415 /* PrivilegedMaintenanceHelper.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PrivilegedMaintenanceHelper.swift; sourceTree = "<group>"; };
-		9035E9CD2FB646DD3ABCF048 /* StorageHistoryViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Features/Storage/Snapshots/StorageHistoryViews.swift; sourceTree = "<group>"; };
+		9035E9CD2FB646DD3ABCF048 /* StorageIntelligenceView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Features/Insights/Storage/StorageIntelligenceView.swift; sourceTree = "<group>"; };
 		9C62E1457EBE9824728FE5D8 /* SystemTasksView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Features/System/Tasks/SystemTasksView.swift; sourceTree = "<group>"; };
 		A34B7866014D956F806963A8 /* secondWind */ = {isa = PBXFileReference; lastKnownFileType = folder; name = secondWind; path = ..; sourceTree = SOURCE_ROOT; };
-		B1C2D3E4F5061728394A5B6C /* RulesView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Features/Rules/RulesView.swift; sourceTree = "<group>"; };
+		B1C2D3E4F5061728394A5B6C /* RulesScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Features/MakeSpace/Rules/RulesScreen.swift; sourceTree = "<group>"; };
 		BDCDA961DC2B7282C1825686 /* SecondWindApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Application/SecondWindApp.swift; sourceTree = "<group>"; };
 		C0E6E629D3D22096721FEB80 /* VolumeCheckState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Features/System/Volume/VolumeCheckState.swift; sourceTree = "<group>"; };
-		CB4C7177097BE1C3DA08DC58 /* ApplicationsViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Features/Applications/ApplicationsViews.swift; sourceTree = "<group>"; };
+		CB4C7177097BE1C3DA08DC58 /* ApplicationsScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Features/MakeSpace/Applications/ApplicationsScreen.swift; sourceTree = "<group>"; };
+		E3A934F418A84609BA01A002 /* SettingsScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Features/System/Settings/SettingsScreen.swift; sourceTree = "<group>"; };
+		E3A934F418A84609BA01A004 /* DashboardScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Features/Overview/DashboardScreen.swift; sourceTree = "<group>"; };
+		E3A934F418A84609BA01A006 /* CleanupScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Features/MakeSpace/Cleanup/CleanupScreen.swift; sourceTree = "<group>"; };
+		E3A934F418A84609BA01A008 /* SystemMonitorScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Features/Insights/Monitor/SystemMonitorScreen.swift; sourceTree = "<group>"; };
+		E3A934F418A84609BA01A010 /* StorageOutcomePreview.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Features/Insights/Storage/StorageOutcomePreview.swift; sourceTree = "<group>"; };
+		E3A934F418A84609BA01A012 /* StorageInventoryObserver.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Features/Insights/Storage/StorageInventoryObserver.swift; sourceTree = "<group>"; };
+		E3A934F418A84609BA01A014 /* DeveloperStorageScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Features/Insights/Storage/DeveloperStorageScreen.swift; sourceTree = "<group>"; };
 		D369FAC52FD028BAD9B60B3E /* SharedViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Shared/SharedViews.swift; sourceTree = "<group>"; };
 		F049D4DEAD98146299C21124 /* SecondWindPrivilegedHelper */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = SecondWindPrivilegedHelper; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
@@ -122,15 +136,22 @@
 		E9F0554EBD477B040EDD786D /* CLI */ = {
 			isa = PBXGroup;
 			children = (
-				CB4C7177097BE1C3DA08DC58 /* ApplicationsViews.swift */,
-				15EFFB0D3C66F913F070F8AF /* HistoryRecoverySettingsViews.swift */,
-				B1C2D3E4F5061728394A5B6C /* RulesView.swift */,
+				CB4C7177097BE1C3DA08DC58 /* ApplicationsScreen.swift */,
+				15EFFB0D3C66F913F070F8AF /* RecoveryActivityScreen.swift */,
+				B1C2D3E4F5061728394A5B6C /* RulesScreen.swift */,
 				BDCDA961DC2B7282C1825686 /* SecondWindApp.swift */,
 				D369FAC52FD028BAD9B60B3E /* SharedViews.swift */,
-				9035E9CD2FB646DD3ABCF048 /* StorageHistoryViews.swift */,
+				9035E9CD2FB646DD3ABCF048 /* StorageIntelligenceView.swift */,
 				9C62E1457EBE9824728FE5D8 /* SystemTasksView.swift */,
 				C0E6E629D3D22096721FEB80 /* VolumeCheckState.swift */,
 				5B1EC2A6BB5EE27D4EDC40AB /* VolumeCheckView.swift */,
+				E3A934F418A84609BA01A002 /* SettingsScreen.swift */,
+				E3A934F418A84609BA01A004 /* DashboardScreen.swift */,
+				E3A934F418A84609BA01A006 /* CleanupScreen.swift */,
+				E3A934F418A84609BA01A008 /* SystemMonitorScreen.swift */,
+				E3A934F418A84609BA01A010 /* StorageOutcomePreview.swift */,
+				E3A934F418A84609BA01A012 /* StorageInventoryObserver.swift */,
+				E3A934F418A84609BA01A014 /* DeveloperStorageScreen.swift */,
 			);
 			name = CLI;
 			path = ../Sources/CLI;
@@ -272,15 +293,22 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				9BC8E40E9D8545915C7A5AEC /* ApplicationsViews.swift in Sources */,
-				038740D59FEC51BCFFD15A44 /* HistoryRecoverySettingsViews.swift in Sources */,
-				A1B2C3D4E5F60718293A4B5C /* RulesView.swift in Sources */,
+				9BC8E40E9D8545915C7A5AEC /* ApplicationsScreen.swift in Sources */,
+				038740D59FEC51BCFFD15A44 /* RecoveryActivityScreen.swift in Sources */,
+				A1B2C3D4E5F60718293A4B5C /* RulesScreen.swift in Sources */,
 				006DCED917E8DC60E97A90D3 /* SecondWindApp.swift in Sources */,
 				519A451B91C353BFC82EFA46 /* SharedViews.swift in Sources */,
-				1BD88E388D9938A493F5BF43 /* StorageHistoryViews.swift in Sources */,
+				1BD88E388D9938A493F5BF43 /* StorageIntelligenceView.swift in Sources */,
 				8410EC36E22EB6109B554A53 /* SystemTasksView.swift in Sources */,
 				858194504A7DF84F5685E1C2 /* VolumeCheckState.swift in Sources */,
 				4C3035B7CB68DD21593FAE52 /* VolumeCheckView.swift in Sources */,
+				E3A934F418A84609BA01A001 /* SettingsScreen.swift in Sources */,
+				E3A934F418A84609BA01A003 /* DashboardScreen.swift in Sources */,
+				E3A934F418A84609BA01A005 /* CleanupScreen.swift in Sources */,
+				E3A934F418A84609BA01A007 /* SystemMonitorScreen.swift in Sources */,
+				E3A934F418A84609BA01A009 /* StorageOutcomePreview.swift in Sources */,
+				E3A934F418A84609BA01A011 /* StorageInventoryObserver.swift in Sources */,
+				E3A934F418A84609BA01A013 /* DeveloperStorageScreen.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -373,7 +401,7 @@
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 2;
+				CURRENT_PROJECT_VERSION = 3;
 				COPY_PHASE_STRIP = NO;
 				DEBUG_INFORMATION_FORMAT = dwarf;
 				ENABLE_HARDENED_RUNTIME = YES;
@@ -396,7 +424,7 @@
 				MACOSX_DEPLOYMENT_TARGET = 15.0;
 				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
 				MTL_FAST_MATH = YES;
-				MARKETING_VERSION = 0.2.0;
+				MARKETING_VERSION = 0.3.0;
 				ONLY_ACTIVE_ARCH = YES;
 				PRODUCT_BUNDLE_IDENTIFIER = org.secondwind.app;
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -441,7 +469,7 @@
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 2;
+				CURRENT_PROJECT_VERSION = 3;
 				COPY_PHASE_STRIP = NO;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				ENABLE_HARDENED_RUNTIME = YES;
@@ -458,7 +486,7 @@
 				MACOSX_DEPLOYMENT_TARGET = 15.0;
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
-				MARKETING_VERSION = 0.2.0;
+				MARKETING_VERSION = 0.3.0;
 				PRODUCT_BUNDLE_IDENTIFIER = org.secondwind.app;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = macosx;

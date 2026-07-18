@@ -2,7 +2,7 @@ import SwiftUI
 import SecondWindCore
 import SecondWindPlatform
 
-struct SystemTasksView: View {
+struct SystemTasksScreen: View {
     let model: SecondWindViewModel
     @State private var helperStatus = OptionalPrivilegeDetector().detect()
     @State private var taskPhase = SystemTaskPhase.ready

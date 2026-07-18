@@ -15,7 +15,7 @@ public struct CleanupScanner: Sendable {
     }
 
     public func scan(progress: @Sendable (ScanProgress) -> Bool) -> ScanOutcome {
-        let totalUnits = rules.count + 2
+        let totalUnits = rules.count + 3
         var findings: [Finding] = []
 
         for (index, rule) in rules.enumerated() {
@@ -37,7 +37,7 @@ public struct CleanupScanner: Sendable {
         }
         findings += reviewRequiredFileFindings(in: home.appendingPathComponent("Desktop"))
 
-        _ = progress(.init(completedUnits: totalUnits, totalUnits: totalUnits, currentTitle: "Finishing scan"))
+        _ = progress(.init(completedUnits: rules.count + 2, totalUnits: totalUnits, currentTitle: "Building known storage inventory"))
         return .completed(findings.filter { $0.byteSize > 0 }.sorted { $0.byteSize > $1.byteSize })
     }
 

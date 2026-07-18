@@ -3,7 +3,7 @@ import SwiftUI
 import SecondWindCore
 import SecondWindPersistence
 
-struct RulesView: View {
+struct RulesScreen: View {
     @State private var policy: RulePolicy
     @State private var route = SafeCleanupRoute.userCaches
     @State private var title = ""

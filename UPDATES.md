@@ -7,10 +7,31 @@ behind any change, use the linked Git commit.
 
 ## Current public development version
 
-**0.2.0** — Granular cleanup review. Cache rules can show individual direct
-children for independent review, app support paths disclose how they were
-matched, and Recovery gives every stored item a clear reference. Interfaces,
-rules, and stored formats may still change incompatibly.
+**0.3.0** — Storage intelligence. A shared local inventory now powers storage
+categories, a category explorer, scan summaries, and comparison with the
+previous snapshot. Interfaces, rules, and stored formats may still change
+incompatibly.
+
+## 18 July 2026
+
+- Storage overview groups known local storage into explainable categories,
+  including Applications, Downloads, Documents, Developer Storage, Caches,
+  Logs, Recovery Storage, and Other / System Data. It explicitly does not
+  claim to explain all macOS System Data.
+- Each category can be expanded into its concrete, known paths, origin, size,
+  and cleanup status.
+- Snapshot comparison now aggregates category growth and shrinkage, while
+  preserving detailed per-entry changes. A missing entry is described as no
+  longer observed, never assumed deleted.
+- The latest scan reports its duration, finding count, eligible, review-required
+  and protected items, and observed storage.
+- Cleanup labels explain whether an item is recreated automatically, requires
+  review, or is protected instead of using a generic “Safe” label.
+- A dedicated Developer Storage screen makes known Xcode, Docker, package,
+  simulator, archive, and other developer locations reviewable independently.
+- Explainable recommendations use deterministic local rules for known large
+  storage and, where a local modification date is available, older large files.
+  They never select or clean anything automatically.
 
 ## 17 July 2026
 

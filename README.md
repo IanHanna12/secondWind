@@ -10,15 +10,14 @@ or update checks.
 > **Early development** — Second Wind is an early proof of concept. Its core
 > cleanup, audit, and Recovery flows are implemented, but interfaces, rules,
 > and stored formats may change incompatibly while the project develops.
-> The current public development version is **0.2.0**.
+> The current public development version is **0.3.0**.
 
 Second Wind is intentionally conservative. It only acts on locations it
 explicitly understands. Unknown or ambiguous data is left untouched rather
 than guessed at.
 
-> **Latest update · 17 July 2026** Cleanup candidates are now reviewed at a
-> more granular level, app support paths show how they were matched, and
-> Recovery clearly identifies each stored item. Read the
+> **Latest update · 18 July 2026** Storage is now presented as a local,
+> categorized inventory with explainable changes since the previous scan. Read the
 > [update history](UPDATES.md).
 
 Read the project's [philosophy](PHILOSOPHY.md) for the principles behind those
@@ -63,8 +62,23 @@ This launches the standard app without the optional privileged helper enabled.
 - Review storage that Second Wind knows how to handle.
 - Move reviewed items to Finder Trash or keep them in local Recovery storage.
 - Track changes in the storage areas it understands.
+- Explain known Applications, Downloads, Documents, Desktop, developer storage,
+  caches, logs, and Recovery storage without presenting them as automatic
+  cleanup targets.
 - Inspect installed apps and their exact, known support paths.
 - Check a validated local volume with macOS's read-only verification.
+
+## Storage intelligence
+
+Each completed scan records a local inventory of the locations Second Wind
+explicitly understands. The Storage history view groups that inventory into
+categories, shows the concrete paths behind a category, and compares it with
+the previous scan. It can therefore describe observed growth, shrinkage, and
+items that are no longer observed without guessing what macOS's protected or
+unknown storage contains.
+
+Recommendations are deterministic explanations of known, eligible items. They
+never select, move, or delete anything on their own.
 
 ## Guarantees and limits
 
@@ -73,6 +87,8 @@ This launches the standard app without the optional privileged helper enabled.
   is deleted automatically.
 - Recovery items remain locally recoverable until you decide otherwise.
 - Ambiguous or sensitive locations stay protected rather than being guessed at.
+- Storage recommendations are deterministic local rules; they explain a known
+  location, size, and—when available—its local modification date.
 - It does not promise to speed up your Mac, clean RAM, or invent
   system-health scores.
 

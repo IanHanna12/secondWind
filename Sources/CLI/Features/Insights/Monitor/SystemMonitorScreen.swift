@@ -1,0 +1,16 @@
+import Combine
+import SwiftUI
+import SecondWindCore
+import SecondWindSystem
+
+struct SystemMonitorScreen: View {
+    let model: SecondWindViewModel
+    private let timer = Timer.publish(every: 1, on: .main, in: .common).autoconnect()
+    var body: some View { ScrollView { VStack(alignment: .leading, spacing: 20) {
+        PageTitle(eyebrow: "LIVE LOCAL METRICS", title: "System monitor", detail: "Refreshes every second while this view is open.") { Button("Refresh", systemImage: "arrow.clockwise") { model.refreshLiveSystem() }.buttonStyle(.borderedProminent) }
+        HStack(spacing: 14) { LiveGauge(title: "CPU utilization", value: model.liveMetrics.cpuUtilization, detail: model.liveMetrics.cpuUtilization == nil ? "Calculating…" : "Across all logical cores", tint: .orange, symbol: "cpu"); LiveGauge(title: "Memory population", value: model.liveMetrics.memory.usedFraction, detail: ByteCountFormatter.string(fromByteCount: model.liveMetrics.memory.usedBytes, countStyle: .memory) + " used", tint: .blue, symbol: "memorychip"); LiveGauge(title: "Storage used", value: Double(model.snapshot.storageUsed) / Double(max(1, model.snapshot.storageTotal)), detail: ByteCountFormatter.string(fromByteCount: model.snapshot.storageAvailable, countStyle: .file) + " available", tint: .mint, symbol: "internaldrive") }
+        HStack(alignment: .top, spacing: 16) { SoftCard { VStack(alignment: .leading, spacing: 10) { Label("Memory pressure", systemImage: "gauge.with.dots.needle.67percent").font(.headline); Text(model.liveMetrics.memory.pressureLabel).font(.title2.bold()).foregroundStyle(pressureColor(model.liveMetrics.memory.pressureLabel)); Text("\(ByteCountFormatter.string(fromByteCount: model.liveMetrics.memory.availableBytes, countStyle: .memory)) immediately available of \(ByteCountFormatter.string(fromByteCount: model.liveMetrics.memory.totalBytes, countStyle: .memory)).").font(.caption).foregroundStyle(.secondary) } }; SoftCard { VStack(alignment: .leading, spacing: 10) { Label("Graphics", systemImage: "rectangle.inset.filled").font(.headline); Text(model.liveMetrics.gpuName ?? "GPU unavailable").font(.headline); Text("macOS does not provide a stable public per-GPU utilization counter. This shows the active Metal device, not a guessed percentage.").font(.caption).foregroundStyle(.secondary) } } }
+        SoftCard { VStack(alignment: .leading, spacing: 12) { Label("Top CPU processes", systemImage: "chart.bar.xaxis").font(.headline); if model.snapshot.topProcesses.isEmpty { Text("Process sampling is loading…").foregroundStyle(.secondary) } else { ForEach(model.snapshot.topProcesses) { process in HStack { Text(process.command).lineLimit(1); Spacer(); Text(String(format: "%.1f%% CPU", process.cpuPercent)).monospacedDigit(); Text(ByteCountFormatter.string(fromByteCount: process.residentMemoryBytes, countStyle: .memory)).foregroundStyle(.secondary).frame(width: 80, alignment: .trailing) }.font(.subheadline) } } } }
+    }.padding(30).frame(maxWidth: 1100, alignment: .leading) }.onAppear { model.refreshLiveSystem() }.onReceive(timer) { _ in model.refreshLiveSystem() } }
+    private func pressureColor(_ label: String) -> Color { label == "Normal" ? .green : label == "Elevated" ? .orange : .red }
+}

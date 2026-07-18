@@ -1,7 +1,7 @@
 import SwiftUI
 import SecondWindPlatform
 
-struct ApplicationsView: View {
+struct ApplicationsScreen: View {
     let model: SecondWindViewModel
     let openCleanup: () -> Void
     @State private var selectedApplicationID: String?

@@ -36,12 +36,20 @@ struct RiskPill: View {
     let risk: Risk
 
     var body: some View {
-        Text(risk.rawValue)
+        Text(label)
             .font(.caption2.weight(.bold))
             .padding(.horizontal, 7)
             .padding(.vertical, 3)
             .foregroundStyle(risk == .safe ? .green : risk == .protected ? .red : .orange)
             .background((risk == .safe ? Color.green : risk == .protected ? Color.red : Color.orange).opacity(0.12), in: Capsule())
+    }
+
+    private var label: String {
+        switch risk {
+        case .safe: return "Recreated automatically"
+        case .reviewRequired: return "Review required"
+        case .protected: return "Protected"
+        }
     }
 }
 
