@@ -86,11 +86,11 @@ private struct RecordedStorageSnapshots: View {
         StorageSnapshotObservation(report: report)
         StorageCategoryOverview(report: report, selectedCategory: $selectedCategory)
         StorageCategoryExplorer(current: current, selectedCategory: selectedCategory)
-        StorageGrowthAnalysis(report: report)
+        StorageDeltaDashboardCard(dashboard: StorageDeltaDashboardBuilder().build(report: report))
         StorageReclaimPreview(report: report, current: current)
         StorageChanges(report: report)
         StorageSnapshotEntries(entries: current.entries)
-        StorageSnapshotTimeline(history: report.history)
+        ScanHistoryCard(entries: ScanHistoryBuilder().build(snapshots: report.history))
     }
 }
 
@@ -183,18 +183,39 @@ private struct StorageCategoryExplorer: View {
     }
 }
 
-private struct StorageGrowthAnalysis: View {
-    let report: StorageSnapshotReport
+private struct StorageDeltaDashboardCard: View {
+    let dashboard: StorageDeltaDashboard
 
     var body: some View {
-        if !report.categoryChanges.isEmpty {
+        if dashboard.hasComparison {
             SoftCard {
                 VStack(alignment: .leading, spacing: 10) {
-                    Label("Largest storage changes", systemImage: "chart.line.uptrend.xyaxis")
+                    Label("Storage delta", systemImage: "chart.line.uptrend.xyaxis")
                         .font(.headline)
-                    Text("Compared with the previous local snapshot. Categories with less than 1 MB of change are omitted.")
+                    Text(comparisonDetail)
                         .font(.caption).foregroundStyle(.secondary)
-                    ForEach(report.categoryChanges.prefix(5)) { change in
+                    if let availableSpaceChange = dashboard.availableSpaceChange {
+                        DeltaSummaryRow(
+                            title: "Free space",
+                            detail: availableSpaceChange >= 0 ? "More free space since the previous scan" : "Less free space since the previous scan",
+                            change: availableSpaceChange
+                        )
+                    }
+                    if let largestCategoryGrowth = dashboard.largestCategoryGrowth {
+                        DeltaSummaryRow(
+                            title: "Largest category growth",
+                            detail: largestCategoryGrowth.category.title,
+                            change: largestCategoryGrowth.byteChange
+                        )
+                    }
+                    if let largestEntryGrowth = dashboard.largestEntryGrowth {
+                        DeltaSummaryRow(
+                            title: "Largest location growth",
+                            detail: largestEntryGrowth.title,
+                            change: largestEntryGrowth.byteChange
+                        )
+                    }
+                    ForEach(dashboard.categoryChanges.prefix(3)) { change in
                         HStack {
                             VStack(alignment: .leading, spacing: 2) {
                                 Text(change.category.title).font(.subheadline.weight(.semibold))
@@ -209,6 +230,31 @@ private struct StorageGrowthAnalysis: View {
                     }
                 }
             }
+        }
+    }
+
+    private var comparisonDetail: String {
+        guard let date = dashboard.comparisonDate else { return "No earlier local snapshot is available." }
+        return "Compared with the local snapshot from \(date.formatted(date: .abbreviated, time: .shortened)). Changes below 1 MB are omitted."
+    }
+}
+
+private struct DeltaSummaryRow: View {
+    let title: String
+    let detail: String
+    let change: Int64
+
+    var body: some View {
+        HStack {
+            VStack(alignment: .leading, spacing: 2) {
+                Text(title).font(.subheadline.weight(.semibold))
+                Text(detail).font(.caption).foregroundStyle(.secondary)
+            }
+            Spacer()
+            Text(change >= 0 ? "+\(bytes(change))" : "−\(bytes(-change))")
+                .font(.subheadline.weight(.semibold))
+                .monospacedDigit()
+                .foregroundStyle(change >= 0 ? .orange : .green)
         }
     }
 }
@@ -299,19 +345,30 @@ private struct StorageSnapshotEntries: View {
     }
 }
 
-private struct StorageSnapshotTimeline: View {
-    let history: [StorageSnapshot]
+private struct ScanHistoryCard: View {
+    let entries: [ScanHistoryEntry]
 
     var body: some View {
-        if history.count > 1 {
+        if entries.count > 1 {
             SoftCard {
                 VStack(alignment: .leading, spacing: 9) {
-                    Label("Local timeline", systemImage: "clock.arrow.circlepath").font(.headline)
-                    ForEach(Array(history.reversed().prefix(8))) { snapshot in
+                    Label("Local scan history", systemImage: "clock.arrow.circlepath").font(.headline)
+                    ForEach(entries.prefix(8)) { entry in
                         HStack {
-                            Text(snapshot.capturedAt.formatted(date: .abbreviated, time: .shortened))
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text(entry.snapshot.capturedAt.formatted(date: .abbreviated, time: .shortened))
+                                if let observedBytesChange = entry.observedBytesChange {
+                                    Text(observedBytesChange >= 0
+                                        ? "Known storage +\(bytes(observedBytesChange))"
+                                        : "Known storage −\(bytes(-observedBytesChange))"
+                                    )
+                                    .foregroundStyle(.secondary)
+                                } else {
+                                    Text("First local baseline").foregroundStyle(.secondary)
+                                }
+                            }
                             Spacer()
-                            Text(bytes(snapshot.availableBytes) + " free").monospacedDigit().foregroundStyle(.secondary)
+                            Text(bytes(entry.snapshot.availableBytes) + " free").monospacedDigit().foregroundStyle(.secondary)
                         }
                         .font(.caption)
                     }

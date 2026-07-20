@@ -7,18 +7,20 @@ candidates and making deliberate storage changes. It is independently
 implemented and has no telemetry, analytics, cloud sync, remote rule downloads,
 or update checks.
 
-> **Early development** — Second Wind is an early proof of concept. Its core
-> cleanup, audit, and Recovery flows are implemented, but interfaces, rules,
-> and stored formats may change incompatibly while the project develops.
-> The current public development version is **0.4.0**.
+> **0.5.0 Preview** — Second Wind is an early, locally distributed preview.
+> Its core cleanup, audit, Recovery, and storage-change flows are implemented,
+> but interfaces, rules, and stored formats may still change incompatibly.
+> Preview downloads are not notarized and macOS may require an explicit
+> confirmation before opening them.
 
 Second Wind is intentionally conservative. It only acts on locations it
 explicitly understands. Unknown or ambiguous data is left untouched rather
 than guessed at.
 
-> **Latest update · 18 July 2026** Application storage now projects the
-> same local storage inventory into explainable application footprints, possible
-> orphaned data, and per-application changes. Read the [update history](UPDATES.md).
+> **Latest update · 20 July 2026** The cleanup review now explains every
+> suggestion's origin, regeneration, protection, and Recovery path. Storage
+> intelligence makes changes between scans and local scan history visible.
+> Read the [update history](UPDATES.md).
 
 Read the project's [philosophy](PHILOSOPHY.md) for the principles behind those
 choices.
@@ -66,7 +68,8 @@ This launches the standard app without the optional privileged helper enabled.
   caches, logs, and Recovery storage without presenting them as automatic
   cleanup targets.
 - Inspect installed apps, their exact known support paths, and possible
-  identifier-based orphaned data without granting those paths any cleanup rights.
+  identifier-based orphaned data. Exact identifier paths require review before
+  they can enter the normal cleanup plan; ambiguous paths remain protected.
 - Check a validated local volume with macOS's read-only verification.
 
 ## Storage intelligence
@@ -88,8 +91,10 @@ application bundle from its known related storage, such as support data, caches,
 logs, preferences, containers, and developer data. Each relationship includes
 its path and association reason. Exact bundle-identifier paths can be shown as
 possible orphaned data when the corresponding application is not installed;
-they remain protected. Application-specific selection only adds existing,
-eligible findings to the normal review, confirmation, Trash, or Recovery flow.
+they require review before they can enter the normal cleanup plan. Name
+matches, ambiguous paths, shared resources, and unknown locations remain
+protected. Application-specific selection only adds existing, eligible findings
+to the normal review, confirmation, Trash, or Recovery flow.
 
 ## Guarantees and limits
 

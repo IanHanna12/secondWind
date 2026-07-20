@@ -9,8 +9,8 @@ packages:
 settings:
   base:
     PRODUCT_BUNDLE_IDENTIFIER: org.secondwind.app
-    MARKETING_VERSION: "0.4.0"
-    CURRENT_PROJECT_VERSION: 4
+    MARKETING_VERSION: "0.5.0"
+    CURRENT_PROJECT_VERSION: 5
     CODE_SIGN_STYLE: Automatic
     ENABLE_HARDENED_RUNTIME: YES
     SWIFT_VERSION: "5.9"
@@ -36,6 +36,8 @@ targets:
       base:
         INFOPLIST_FILE: Config/App-Info.plist
         CODE_SIGN_ENTITLEMENTS: Config/SecondWind.entitlements
+        CODE_SIGN_IDENTITY: "Apple Development"
+        DEVELOPMENT_TEAM: 33474MTKLP
         PRODUCT_BUNDLE_IDENTIFIER: org.secondwind.app
       configs:
         Debug:
@@ -58,6 +60,8 @@ targets:
       base:
         INFOPLIST_FILE: Config/Helper-Info.plist
         CODE_SIGN_ENTITLEMENTS: Config/PrivilegedMaintenanceHelper.entitlements
+        CODE_SIGN_IDENTITY: "Apple Development"
+        DEVELOPMENT_TEAM: 33474MTKLP
         PRODUCT_BUNDLE_IDENTIFIER: org.secondwind.PrivilegedMaintenanceHelper
         MACH_O_TYPE: mh_execute
 schemes:

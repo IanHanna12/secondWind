@@ -1,16 +1,30 @@
 # Updates
 
-This is a short, dated record of visible changes to Second Wind. It is not a
-release log: Second Wind has no release cadence, version tags, or update
-service. App versions describe development stages; for the precise source
-behind any change, use the linked Git commit.
+This is a short, dated record of visible changes to Second Wind. App versions
+describe development stages; for the precise source behind any change, use the
+linked Git commit.
 
 ## Current public development version
 
-**0.4.0** — Application storage inventory and reviewed cleanup. Installed
-applications and possible orphaned data are explainable projections of the
-same local storage inventory and snapshot history. Interfaces, rules, and
-stored formats may still change incompatibly.
+**0.5.0 Preview** — The first directly usable preview: storage is explained
+before cleanup is offered, changes since earlier scans are visible, and local
+Recovery activity has a readable timeline. The app is distributed locally as a
+non-notarized preview; interfaces, rules, and stored formats may still change
+incompatibly.
+
+## 20 July 2026
+
+- Cleanup review now shows why every candidate was suggested, whether its data
+  can be regenerated, its protection status, and whether Recovery is available
+  before the user creates a cleanup plan.
+- Storage intelligence now presents an explicit dashboard for growth and
+  shrinkage since the previous scan, largest changed categories, and a compact
+  local scan history. These views are derived from the existing snapshots; no
+  parallel history is stored.
+- Recovery activity is grouped into a local, day-based timeline alongside the
+  current Recovery items and audit activity.
+- Added an architecture map describing the flow from local scan input through
+  facts, snapshot history, preview read models, user decisions, and Recovery.
 
 ## 18 July 2026
 

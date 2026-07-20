@@ -1,5 +1,6 @@
 import SwiftUI
 import SecondWindCore
+import SecondWindApplication
 
 struct RecoveryActivityScreen: View {
     let model: SecondWindViewModel
@@ -20,6 +21,12 @@ struct RecoveryActivityScreen: View {
                 Button("Refresh") { model.refreshActivity() }
             }
             List {
+                RecoveryTimelineSection(
+                    days: RecoveryTimelineBuilder().build(
+                        recoveryItems: model.recoveryItems,
+                        auditRecords: model.auditRecords
+                    )
+                )
                 Section("Recovery storage") {
                     if model.recoveryItems.isEmpty {
                         ContentUnavailableView("Nothing in Recovery", systemImage: "checkmark.shield", description: Text("Items stored here remain available to restore and are never deleted automatically."))
@@ -86,6 +93,86 @@ struct RecoveryActivityScreen: View {
             Button("Cancel", role: .cancel) {}
         } message: {
             Text("This permanently deletes \(itemPendingPermanentDeletion?.originalPath ?? "this item") from Recovery. It cannot be restored or undone.")
+        }
+    }
+}
+
+private struct RecoveryTimelineSection: View {
+    let days: [RecoveryTimelineDay]
+
+    var body: some View {
+        if !days.isEmpty {
+            Section("Recent recovery activity") {
+                ForEach(days) { day in
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text(day.date.formatted(date: .abbreviated, time: .omitted))
+                            .font(.caption.weight(.semibold))
+                            .foregroundStyle(.secondary)
+                        ForEach(day.events) { event in
+                            RecoveryTimelineEventRow(event: event)
+                        }
+                    }
+                    .padding(.vertical, 4)
+                }
+            }
+        }
+    }
+}
+
+private struct RecoveryTimelineEventRow: View {
+    let event: RecoveryTimelineEvent
+
+    var body: some View {
+        HStack(alignment: .top, spacing: 9) {
+            Image(systemName: symbol)
+                .foregroundStyle(tint)
+                .frame(width: 18)
+            VStack(alignment: .leading, spacing: 2) {
+                Text(title).font(.subheadline.weight(.semibold))
+                Text(detail).font(.caption).foregroundStyle(.secondary)
+            }
+            Spacer()
+            Text(timestamp.formatted(date: .omitted, time: .shortened))
+                .font(.caption.monospacedDigit())
+                .foregroundStyle(.secondary)
+        }
+    }
+
+    private var timestamp: Date {
+        event.timestamp
+    }
+
+    private var title: String {
+        switch event {
+        case let .recoveryItem(item): return "Stored in Recovery: \(URL(fileURLWithPath: item.originalPath).lastPathComponent)"
+        case let .activity(record): return "\(record.kind.rawValue) — \(record.result)"
+        }
+    }
+
+    private var detail: String {
+        switch event {
+        case let .recoveryItem(item): return item.originalPath
+        case let .activity(record): return record.paths.isEmpty ? "No paths recorded" : "\(record.paths.count) recorded path(s)"
+        }
+    }
+
+    private var symbol: String {
+        switch event {
+        case .recoveryItem: return "arrow.uturn.backward.circle.fill"
+        case let .activity(record):
+            switch record.kind {
+            case .restore: return "arrow.uturn.backward"
+            case .permanentDelete: return "trash.fill"
+            case .failure: return "exclamationmark.triangle.fill"
+            default: return "checkmark.circle.fill"
+            }
+        }
+    }
+
+    private var tint: Color {
+        switch event {
+        case .recoveryItem: return .green
+        case let .activity(record): return record.kind == .failure ? .orange : .secondary
         }
     }
 }

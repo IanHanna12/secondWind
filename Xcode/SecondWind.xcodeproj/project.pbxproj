@@ -62,7 +62,7 @@
 		C565F25F92B73B71D68BF370 /* RulesScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RulesScreen.swift; sourceTree = "<group>"; };
 		C57443188D3B7E4FFB0A871D /* ApplicationsScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ApplicationsScreen.swift; sourceTree = "<group>"; };
 		DE2429354B712E959259B866 /* CleanupScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CleanupScreen.swift; sourceTree = "<group>"; };
-		F049D4DEAD98146299C21124 /* SecondWindPrivilegedHelper */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = SecondWindPrivilegedHelper; sourceTree = BUILT_PRODUCTS_DIR; };
+		F049D4DEAD98146299C21124 /* SecondWindPrivilegedHelper */ = {isa = PBXFileReference; includeInIndex = 0; path = SecondWindPrivilegedHelper; sourceTree = BUILT_PRODUCTS_DIR; };
 		F70D522EFD85E5C0417E0807 /* DashboardScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DashboardScreen.swift; sourceTree = "<group>"; };
 		F8BEE60B5532683616190E76 /* StorageIntelligenceView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StorageIntelligenceView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
@@ -340,9 +340,11 @@
 				LastUpgradeCheck = 1430;
 				TargetAttributes = {
 					ED541B8F0C8F4A1871FA3B8F = {
+						DevelopmentTeam = 33474MTKLP;
 						ProvisioningStyle = Automatic;
 					};
 					F637E4DB2457AC09E3DD972F = {
+						DevelopmentTeam = 33474MTKLP;
 						ProvisioningStyle = Automatic;
 					};
 				};
@@ -523,7 +525,7 @@
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				CODE_SIGN_STYLE = Automatic;
 				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = 4;
+				CURRENT_PROJECT_VERSION = 5;
 				DEBUG_INFORMATION_FORMAT = dwarf;
 				ENABLE_HARDENED_RUNTIME = YES;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
@@ -543,7 +545,7 @@
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				MACOSX_DEPLOYMENT_TARGET = 15.0;
-				MARKETING_VERSION = 0.4.0;
+				MARKETING_VERSION = 0.5.0;
 				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
 				MTL_FAST_MATH = YES;
 				ONLY_ACTIVE_ARCH = YES;
@@ -591,7 +593,7 @@
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				CODE_SIGN_STYLE = Automatic;
 				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = 4;
+				CURRENT_PROJECT_VERSION = 5;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				ENABLE_HARDENED_RUNTIME = YES;
 				ENABLE_NS_ASSERTIONS = NO;
@@ -605,7 +607,7 @@
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				MACOSX_DEPLOYMENT_TARGET = 15.0;
-				MARKETING_VERSION = 0.4.0;
+				MARKETING_VERSION = 0.5.0;
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
 				PRODUCT_BUNDLE_IDENTIFIER = org.secondwind.app;

@@ -74,13 +74,15 @@ struct CleanupScreen: View {
                         if !items.isEmpty {
                             Section {
                                 ForEach(items) { item in
-                                    FindingRow(
-                                        item: item,
-                                        isSelected: model.selectedIDs.contains(item.id),
-                                        toggleSelection: item.risk.isExecutable && item.supportedAction != .none
-                                            ? { model.toggleSelection(for: item) }
-                                            : nil
-                                    )
+                                    if let candidate = reviewCandidates[item.id] {
+                                        FindingRow(
+                                            candidate: candidate,
+                                            isSelected: model.selectedIDs.contains(item.id),
+                                            toggleSelection: item.risk.isExecutable && item.supportedAction != .none
+                                                ? { model.toggleSelection(for: item) }
+                                                : nil
+                                        )
+                                    }
                                 }
                             } header: {
                                 HStack(spacing: 6) {
@@ -121,6 +123,14 @@ struct CleanupScreen: View {
             return riskMatches && categoryMatches && queryMatches
         }
         return filtered.sorted(by: sortOrder.comparator)
+    }
+
+    private var reviewCandidates: [UUID: CleanupReviewCandidate] {
+        Dictionary(
+            uniqueKeysWithValues: CleanupReviewBuilder()
+                .build(findings: model.findings)
+                .map { ($0.id, $0) }
+        )
     }
 
     private var categoryTotals: [CleanupCategoryTotal] {
@@ -347,9 +357,11 @@ private enum CleanupSortOrder: String, CaseIterable, Identifiable {
 }
 
 private struct FindingRow: View {
-    let item: Finding
+    let candidate: CleanupReviewCandidate
     let isSelected: Bool
     let toggleSelection: (() -> Void)?
+
+    private var item: Finding { candidate.finding }
 
     var body: some View {
         HStack(alignment: .top, spacing: 12) {
@@ -362,10 +374,19 @@ private struct FindingRow: View {
                 Text(safetyDetail)
                     .font(.caption.weight(.medium))
                     .foregroundStyle(tint)
-                Text(item.explanation)
+                Text(candidate.reason.explanation)
                     .font(.caption)
                     .foregroundStyle(.secondary)
                     .lineLimit(2)
+                Text("Suggested by: \(candidate.reason.origin)")
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
+                Text(candidate.regeneration.detail)
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
+                Text(candidate.recovery.detail)
+                    .font(.caption2)
+                    .foregroundStyle(candidate.recovery == .available ? .green : .secondary)
                 Text("Location: \(visiblePath)")
                     .font(.caption2.monospaced())
                     .foregroundStyle(.secondary)
