@@ -6,11 +6,16 @@ linked Git commit.
 
 ## Current public development version
 
-**0.5.0 Preview** — The first directly usable preview: storage is explained
-before cleanup is offered, changes since earlier scans are visible, and local
-Recovery activity has a readable timeline. The app is distributed locally as a
-non-notarized preview; interfaces, rules, and stored formats may still change
-incompatibly.
+**0.5.1 Preview** — Recovery storage stays immediately actionable after larger
+cleanup actions. The app is distributed locally as a non-notarized preview;
+interfaces, rules, and stored formats may still change incompatibly.
+
+## 21 July 2026
+
+- Recovery storage now appears before activity, keeping Restore and permanent
+  Delete directly accessible.
+- Recovery activity starts with the eight newest events and can expand on
+  demand, instead of displacing the stored items below the fold.
 
 ## 20 July 2026
 

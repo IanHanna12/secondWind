@@ -2,7 +2,7 @@
 set -euo pipefail
 
 root="$(cd "$(dirname "$0")/.." && pwd)"
-version="0.5.0"
+version="0.5.1"
 build_root="/private/tmp/secondwind-preview-release-$version"
 artifacts="$root/Artifacts"
 app="$artifacts/SecondWind.app"

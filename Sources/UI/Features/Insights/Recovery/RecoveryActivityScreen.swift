@@ -5,6 +5,7 @@ import SecondWindApplication
 struct RecoveryActivityScreen: View {
     let model: SecondWindViewModel
     @State private var itemPendingPermanentDeletion: RecoveryItem?
+    @State private var showsAllTimelineEvents = false
 
     var body: some View {
         VStack(alignment: .leading, spacing: 20) {
@@ -21,12 +22,6 @@ struct RecoveryActivityScreen: View {
                 Button("Refresh") { model.refreshActivity() }
             }
             List {
-                RecoveryTimelineSection(
-                    days: RecoveryTimelineBuilder().build(
-                        recoveryItems: model.recoveryItems,
-                        auditRecords: model.auditRecords
-                    )
-                )
                 Section("Recovery storage") {
                     if model.recoveryItems.isEmpty {
                         ContentUnavailableView("Nothing in Recovery", systemImage: "checkmark.shield", description: Text("Items stored here remain available to restore and are never deleted automatically."))
@@ -58,6 +53,13 @@ struct RecoveryActivityScreen: View {
                         }
                     }
                 }
+                RecoveryTimelineSection(
+                    days: RecoveryTimelineBuilder().build(
+                        recoveryItems: model.recoveryItems,
+                        auditRecords: model.auditRecords
+                    ),
+                    showsAllEvents: $showsAllTimelineEvents
+                )
                 Section("Local activity") {
                     if model.auditRecords.isEmpty { Text("Your first scan will appear here.").foregroundStyle(.secondary) }
                     ForEach(model.auditRecords) { record in
@@ -99,20 +101,36 @@ struct RecoveryActivityScreen: View {
 
 private struct RecoveryTimelineSection: View {
     let days: [RecoveryTimelineDay]
+    @Binding var showsAllEvents: Bool
+
+    private let initialEventLimit = 8
+
+    private var allEvents: [RecoveryTimelineEvent] {
+        days.flatMap(\.events)
+    }
+
+    private var displayedEvents: [RecoveryTimelineEvent] {
+        showsAllEvents ? allEvents : Array(allEvents.prefix(initialEventLimit))
+    }
 
     var body: some View {
-        if !days.isEmpty {
+        if !allEvents.isEmpty {
             Section("Recent recovery activity") {
-                ForEach(days) { day in
+                ForEach(Array(displayedEvents.enumerated()), id: \.element.id) { index, event in
                     VStack(alignment: .leading, spacing: 8) {
-                        Text(day.date.formatted(date: .abbreviated, time: .omitted))
+                        if index == 0 || !Calendar.current.isDate(event.timestamp, inSameDayAs: displayedEvents[index - 1].timestamp) {
+                            Text(event.timestamp.formatted(date: .abbreviated, time: .omitted))
                             .font(.caption.weight(.semibold))
                             .foregroundStyle(.secondary)
-                        ForEach(day.events) { event in
-                            RecoveryTimelineEventRow(event: event)
                         }
+                        RecoveryTimelineEventRow(event: event)
                     }
                     .padding(.vertical, 4)
+                }
+                if allEvents.count > initialEventLimit {
+                    Button(showsAllEvents ? "Show recent activity" : "Show all \(allEvents.count) events") {
+                        showsAllEvents.toggle()
+                    }
                 }
             }
         }
