@@ -9,6 +9,7 @@ struct CleanupScreen: View {
     @State private var riskFilter = CleanupRiskFilter.all
     @State private var categoryFilter: FindingCategory?
     @State private var sortOrder = CleanupSortOrder.size
+    @State private var visibleFindings: [Finding] = []
 
     var body: some View {
         VStack(alignment: .leading, spacing: 18) {
@@ -74,7 +75,7 @@ struct CleanupScreen: View {
                         if !items.isEmpty {
                             Section {
                                 ForEach(items) { item in
-                                    if let candidate = reviewCandidates[item.id] {
+                                    if let candidate = model.cleanupReviewCandidates[item.id] {
                                         FindingRow(
                                             candidate: candidate,
                                             isSelected: model.selectedIDs.contains(item.id),
@@ -112,9 +113,15 @@ struct CleanupScreen: View {
                 .padding(.vertical, 12)
                 .background(.regularMaterial)
         }
+        .onAppear(perform: refreshVisibleFindings)
+        .onChange(of: model.findings) { _, _ in refreshVisibleFindings() }
+        .onChange(of: query) { _, _ in refreshVisibleFindings() }
+        .onChange(of: riskFilter) { _, _ in refreshVisibleFindings() }
+        .onChange(of: categoryFilter) { _, _ in refreshVisibleFindings() }
+        .onChange(of: sortOrder) { _, _ in refreshVisibleFindings() }
     }
 
-    private var visibleFindings: [Finding] {
+    private func refreshVisibleFindings() {
         let normalizedQuery = query.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
         let filtered = model.findings.filter { finding in
             let riskMatches = riskFilter.matches(finding.risk)
@@ -122,24 +129,12 @@ struct CleanupScreen: View {
             let queryMatches = normalizedQuery.isEmpty || finding.title.lowercased().contains(normalizedQuery) || finding.path.lowercased().contains(normalizedQuery)
             return riskMatches && categoryMatches && queryMatches
         }
-        return filtered.sorted(by: sortOrder.comparator)
-    }
-
-    private var reviewCandidates: [UUID: CleanupReviewCandidate] {
-        Dictionary(
-            uniqueKeysWithValues: CleanupReviewBuilder()
-                .build(findings: model.findings)
-                .map { ($0.id, $0) }
-        )
+        visibleFindings = filtered.sorted(by: sortOrder.comparator)
     }
 
     private var categoryTotals: [CleanupCategoryTotal] {
-        Dictionary(grouping: model.findings.compactMap { finding -> (FindingCategory, Int64)? in
-            guard let category = finding.category else { return nil }
-            return (category, finding.byteSize)
-        }, by: \.0)
-        .map { category, values in
-            CleanupCategoryTotal(category: category, bytes: values.reduce(0) { $0 + $1.1 })
+        model.cleanupCategoryBytes.map { category, bytes in
+            CleanupCategoryTotal(category: category, bytes: bytes)
         }
         .sorted { $0.bytes > $1.bytes }
     }

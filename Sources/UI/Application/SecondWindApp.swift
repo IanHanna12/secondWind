@@ -36,8 +36,36 @@ struct SecondWindMain {
     }
 }
 
-private enum AppSection: String, CaseIterable, Identifiable { case dashboard = "Home", snapshots = "Storage overview", developerStorage = "Developer storage", monitor = "System monitor", cleanup = "Clean Up", applications = "Applications", rules = "Rules", volumeCheck = "Volume check", systemTasks = "System tasks", settings = "Settings", activity = "Recovery & activity"; var id: String { rawValue }
-    var symbol: String { switch self { case .dashboard: return "gauge.with.dots.needle.67percent"; case .snapshots: return "clock.arrow.trianglehead.counterclockwise.rotate.90"; case .developerStorage: return "hammer"; case .monitor: return "waveform.path.ecg"; case .cleanup: return "sparkles"; case .applications: return "app.dashed"; case .rules: return "checklist"; case .volumeCheck: return "externaldrive.badge.checkmark"; case .systemTasks: return "wrench.and.screwdriver"; case .settings: return "gearshape"; case .activity: return "clock.arrow.circlepath" } }
+private enum AppSection: String, CaseIterable, Identifiable {
+    case dashboard = "Home"
+    case snapshots = "Storage overview"
+    case developerStorage = "Developer storage"
+    case monitor = "System monitor"
+    case cleanup = "Clean Up"
+    case applications = "Applications"
+    case rules = "Rules"
+    case volumeCheck = "Volume check"
+    case systemTasks = "System tasks"
+    case settings = "Settings"
+    case activity = "Recovery & activity"
+
+    var id: String { rawValue }
+
+    var symbol: String {
+        switch self {
+        case .dashboard: return "gauge.with.dots.needle.67percent"
+        case .snapshots: return "clock.arrow.trianglehead.counterclockwise.rotate.90"
+        case .developerStorage: return "hammer"
+        case .monitor: return "waveform.path.ecg"
+        case .cleanup: return "sparkles"
+        case .applications: return "app.dashed"
+        case .rules: return "checklist"
+        case .volumeCheck: return "externaldrive.badge.checkmark"
+        case .systemTasks: return "wrench.and.screwdriver"
+        case .settings: return "gearshape"
+        case .activity: return "clock.arrow.circlepath"
+        }
+    }
 }
 
 enum AuditExportFormat { case json, markdown
@@ -54,6 +82,13 @@ struct CleanupCompletion {
 @MainActor @Observable final class SecondWindViewModel {
     var findings: [Finding] = []
     var selectedIDs: Set<UUID> = []
+    var selectedBytes: Int64 = 0
+    var actionableFindingCount = 0
+    var actionableBytes: Int64 = 0
+    var protectedFindingCount = 0
+    var reviewRequiredSelectionCount = 0
+    var cleanupReviewCandidates: [UUID: CleanupReviewCandidate] = [:]
+    var cleanupCategoryBytes: [FindingCategory: Int64] = [:]
     var proposedPlan: CleanupPlan?
     var cleanupPresentation: CleanupPresentationPhase = .idle
     var cleanupCompletion: CleanupCompletion?
@@ -66,7 +101,7 @@ struct CleanupCompletion {
     var applicationStorage = ApplicationInventory(storageInventory: StorageInventory(entries: []), applications: [])
     var applicationPreview: ApplicationRemovalPreview?
     var isLoadingApplicationPreview = false
-    private var inspectedApplicationID: String?
+    var inspectedApplicationID: String?
     var auditRecords: [AuditRecord]
     var recoveryItems: [RecoveryItem]
     var storageInventory = StorageInventory(entries: [])
@@ -74,16 +109,21 @@ struct CleanupCompletion {
     var latestScanSummary: StorageScanSummary?
     var menuMonitor = UserDefaults.standard.bool(forKey: "menuBarMonitorEnabled")
     let home = FileManager.default.homeDirectoryForCurrentUser
-    private let auditStore: AuditStore
-    private let recoveryStore: RecoveryStore
-    private let monitorService: MonitorService
-    private let liveMetricsService: LiveMetricsService
-    private let storageScanService: any StorageScanning
-    private let applicationInventoryBuilder = ApplicationInventoryBuilder()
-    private let preferenceService = PreferenceService()
-    private let rulePolicyStore = RulePolicyStore()
-    private var scanTask: Task<Void, Never>?
-    private var activeScanID: UUID?
+    let auditStore: AuditStore
+    let recoveryStore: RecoveryStore
+    let monitorService: MonitorService
+    let liveMetricsService: LiveMetricsService
+    let storageScanService: any StorageScanning
+    let applicationInventoryBuilder = ApplicationInventoryBuilder()
+    let preferenceService = PreferenceService()
+    let rulePolicyStore = RulePolicyStore()
+    let operationCoordinator: any OperationCoordinator = LocalOperationCoordinator()
+    var scanTask: Task<Void, Never>?
+    var activeScanID: UUID?
+    var activeOperationID: OperationID?
+    var findingBytesByID: [UUID: Int64] = [:]
+    var actionableFindingIDs: Set<UUID> = []
+    var reviewRequiredFindingIDs: Set<UUID> = []
 
     init() {
         let monitorService = MonitorService()
@@ -92,7 +132,7 @@ struct CleanupCompletion {
         self.monitorService = monitorService
         self.auditStore = auditStore
         self.recoveryStore = recoveryStore
-        self.storageScanService = LocalStorageScanService(auditRecorder: auditStore)
+        self.storageScanService = LocalStorageScanService(auditStore: auditStore)
         self.liveMetricsService = LiveMetricsService()
         self.snapshot = monitorService.snapshot()
         self.auditRecords = auditStore.records()
@@ -106,45 +146,66 @@ struct CleanupCompletion {
         activeScanID = scanID
         isScanning = true
         let rules = rulePolicyStore.effectiveRules()
-        let request = StorageScanRequest(
-            home: home,
-            rules: rules,
-            recoveryItems: recoveryItems,
-            totalBytes: snapshot.storageTotal,
-            availableBytes: snapshot.storageAvailable
-        )
+        let recoveryItems = recoveryItems
+        let totalBytes = snapshot.storageTotal
+        let availableBytes = snapshot.storageAvailable
+        let coordinator = operationCoordinator
         let storageScanService = storageScanService
-        scanTask = Task { [weak self, storageScanService, request] in
-            for await event in storageScanService.events(for: request) {
+        scanTask = Task { [weak self, storageScanService, coordinator, recoveryItems, totalBytes, availableBytes] in
+            let operationID: OperationID
+            do { operationID = try await coordinator.start(kind: .scan) }
+            catch {
                 guard let self, self.activeScanID == scanID else { return }
+                self.isScanning = false
+                self.message = error.localizedDescription
+                return
+            }
+            guard let self, self.activeScanID == scanID else {
+                await coordinator.cancel(operationID)
+                return
+            }
+            self.activeOperationID = operationID
+            let request = StorageScanRequest(operationID: operationID, home: self.home, rules: rules, recoveryItems: recoveryItems, totalBytes: totalBytes, availableBytes: availableBytes)
+            var completed = false
+            for await event in storageScanService.events(for: request) {
+                guard self.activeScanID == scanID else { return }
                 switch event {
                 case let .progress(progress):
                     self.scanProgress = progress
+                    await coordinator.updateProgress(.init(completedUnits: progress.completedUnits, totalUnits: progress.totalUnits, title: progress.currentTitle), for: operationID)
                 case let .completed(result):
                     self.apply(result)
+                    completed = true
                 }
             }
+            if completed { await coordinator.finish(operationID) }
+            else if Task.isCancelled { await coordinator.cancel(operationID) }
+            else { await coordinator.fail(operationID, with: .providerUnavailable(provider: "Local scan")) }
         }
     }
 
     private func apply(_ result: StorageScanResult) {
-        findings = result.findings
+        replaceFindings(result.findings)
         applications = result.applications
         storageInventory = result.inventory
         applicationStorage = applicationInventoryBuilder.build(storageInventory: result.inventory, applications: result.applications)
         storageSnapshots = result.snapshotReport
         latestScanSummary = result.summary
-        selectedIDs.formIntersection(Set(result.findings.map(\.id)))
         isScanning = false
         scanProgress = nil
         activeScanID = nil
+        activeOperationID = nil
         scanTask = nil
         refreshActivity()
     }
     func cancelScan() {
         scanTask?.cancel()
+        if let activeOperationID {
+            Task { await operationCoordinator.cancel(activeOperationID) }
+        }
         scanTask = nil
         activeScanID = nil
+        activeOperationID = nil
         isScanning = false
         scanProgress = nil
     }
@@ -182,15 +243,21 @@ struct CleanupCompletion {
             let finderTrashMover = FinderTrashMover()
             let executor = PlanExecutor(
                 planBuilder: planBuilder,
-                recoveryRepository: recoveryStore,
+                recoveryStore: recoveryStore,
                 trashMover: finderTrashMover,
-                auditRecorder: auditStore
+                auditStore: auditStore
             )
+            let coordinator = operationCoordinator
             Task {
                 do {
-                    _ = try await executor.execute(plan.confirmed())
-                    cleanupCompletion = .init(itemCount: plan.actions.count, reclaimedBytes: plan.totalBytes, destination: plan.destination)
-                    selectedIDs.removeAll()
+                    let operationID = try await coordinator.start(kind: .cleanup)
+                    let outcome = try await executor.executeWithOutcome(plan.confirmed(), operationID: operationID, verifier: LocalCleanupOutcomeVerifier(), availableBytesBefore: snapshot.storageAvailable)
+                    await coordinator.finish(operationID)
+                    let completedCount = outcome.results.filter { result in
+                        switch result.outcome { case .completedAndVerified, .completedNotYetObservable: return true; default: return false }
+                    }.count
+                    cleanupCompletion = .init(itemCount: completedCount, reclaimedBytes: outcome.movedBytes, destination: plan.destination)
+                    clearSelection()
                     proposedPlan = nil
                     cleanupPresentation = .idle
                     scan()
@@ -243,12 +310,12 @@ struct CleanupCompletion {
                     destination: .finderTrash,
                     result: "moved \(movedPaths.count) user-selected item(s) to Finder Trash"
                 ))
-                findings.removeAll { finding in
+                let remainingFindings = findings.filter { finding in
                     movedPaths.contains { path in
-                        finding.path == path || finding.path.hasPrefix(path + "/")
+                        finding.path != path && !finding.path.hasPrefix(path + "/")
                     }
                 }
-                selectedIDs.formIntersection(Set(findings.map(\.id)))
+                replaceFindings(remainingFindings)
             }
             if !failures.isEmpty {
                 try? auditStore.append(.init(
@@ -280,141 +347,6 @@ struct CleanupCompletion {
             .filter { selectedIDs.contains($0.id) }
         moveFindingsDirectlyToTrash(selectedFindings)
     }
-    func refreshDashboard() {
-        let monitorService = monitorService
-        Task.detached {
-            let dashboardSnapshot = monitorService.snapshot(includeProcesses: true)
-            await MainActor.run { self.snapshot = dashboardSnapshot }
-        }
-    }
-    func refreshLiveMetrics() { liveMetrics = liveMetricsService.sample() }
-    func refreshLiveSystem() {
-        refreshLiveMetrics()
-        refreshDashboard()
-    }
-    var selectedBytes: Int64 { findings.filter { selectedIDs.contains($0.id) }.reduce(0) { $0 + $1.byteSize } }
-    var actionableFindingCount: Int { findings.filter { $0.risk.isExecutable && $0.supportedAction != .none }.count }
-    var actionableBytes: Int64 { findings.filter { $0.risk.isExecutable && $0.supportedAction != .none }.reduce(0) { $0 + $1.byteSize } }
-    var protectedFindingCount: Int { findings.filter { !$0.risk.isExecutable || $0.supportedAction == .none }.count }
-    var reviewRequiredSelectionCount: Int { findings.filter { selectedIDs.contains($0.id) && $0.confidence == .needsUserReview }.count }
-    func selectFindings(_ ids: Set<UUID>) {
-        let eligible = findings.filter { finding in
-            finding.risk.isExecutable && finding.supportedAction != .none
-        }.map(\.id)
-        selectedIDs = ids.intersection(Set(eligible))
-    }
-    func toggleSelection(for finding: Finding) {
-        var updated = selectedIDs
-        if updated.contains(finding.id) {
-            updated.remove(finding.id)
-        } else {
-            updated.insert(finding.id)
-        }
-        selectFindings(updated)
-    }
-    func selectSafeFindings(_ candidates: [Finding]) {
-        addEligibleFindings(candidates.filter { $0.risk == .safe })
-    }
-    func addEligibleFindings(_ candidates: [Finding]) {
-        let candidateIDs = candidates
-            .filter { candidate in
-                findings.contains(where: { $0.id == candidate.id }) &&
-                    candidate.risk.isExecutable && candidate.supportedAction != .none
-            }
-            .map(\.id)
-        selectFindings(selectedIDs.union(candidateIDs))
-    }
-    func clearSelection() { selectedIDs.removeAll() }
-    func loadApplications() {
-        applications = InstalledApplicationInventory(home: home).applications()
-        applicationStorage = applicationInventoryBuilder.build(storageInventory: storageInventory, applications: applications)
-    }
-
-    func selectApplicationStorageEntries(_ entries: [ApplicationEntry]) {
-        let paths = Set(entries.compactMap(\.storage.path))
-        let matchingFindingIDs = findings
-            .filter { paths.contains($0.path) }
-            .map(\.id)
-        selectFindings(selectedIDs.union(matchingFindingIDs))
-        if matchingFindingIDs.isEmpty {
-            message = "These known application paths are protected or are not current cleanup findings. No items were added to the plan."
-        } else {
-            message = "Added \(matchingFindingIDs.count) eligible application item(s) to the existing cleanup selection."
-        }
-    }
-    func inspectApplication(_ app: InstalledApplication) {
-        inspectedApplicationID = app.id
-        applicationPreview = nil
-        isLoadingApplicationPreview = true
-        let home = home
-        Task { [weak self, app, home] in
-            let preview = await Task.detached {
-                InstalledApplicationInventory(home: home).removalPreview(for: app)
-            }.value
-            guard self?.inspectedApplicationID == app.id else { return }
-            self?.applicationPreview = preview
-            self?.isLoadingApplicationPreview = false
-        }
-    }
-    func prepareUninstall(_ app: InstalledApplication) { let candidates = InstalledApplicationInventory(home: home).uninstallFindings(for: app); findings = candidates; selectedIDs = Set(candidates.filter { $0.risk.isExecutable && $0.supportedAction == .uninstall }.map(\.id)); message = "Removal plan prepared for \(app.displayName). Open Clean Up to review every affected path." }
-    func restore(_ item: RecoveryItem) { do { let destination = try recoveryStore.restore(item); try? auditStore.append(.init(kind: .restore, planID: item.planID, ruleVersions: [], paths: [destination.path], bytes: item.byteSize, destination: .recovery, result: "restored")); refreshActivity(); scan(); message = "Restored to \(destination.path)" } catch { message = error.localizedDescription } }
-    func deletePermanently(_ item: RecoveryItem) {
-        do {
-            try recoveryStore.deletePermanently(item)
-            try? auditStore.append(.init(kind: .permanentDelete, planID: item.planID, ruleVersions: [], paths: [item.originalPath], bytes: item.byteSize, destination: .recovery, result: "permanently deleted from recovery storage"))
-            refreshActivity()
-            scan()
-            message = "Permanently deleted \(item.originalPath)."
-        } catch {
-            message = error.localizedDescription
-        }
-    }
-    func recordMaintenanceStarted(task: MaintenanceTask, volume: VolumeReference?) {
-        try? auditStore.append(.init(kind: .maintenance, ruleVersions: [task.rawValue], paths: [volume?.url.path ?? "/"], bytes: 0, destination: .systemTask, result: "started"))
-        refreshActivity()
-    }
-    func recordMaintenance(result: Result<MaintenanceExecutionResult, Error>, task: MaintenanceTask, volume: VolumeReference?) {
-        let text: String
-        let kind: AuditKind
-        switch result {
-        case .success(let result): text = result.succeeded ? "completed: \(result.output)" : "macOS reported a problem: \(result.output)"; kind = .maintenance
-        case .failure(let error): text = "failed: \(error.localizedDescription)"; kind = .failure
-        }
-        try? auditStore.append(.init(kind: kind, ruleVersions: [task.rawValue], paths: [volume?.url.path ?? "/"], bytes: 0, destination: .systemTask, result: text))
-        refreshActivity()
-    }
-    func setPreference(_ preference: SystemPreference, enabled: Bool) {
-        preferenceService.set(preference, enabled: enabled)
-        try? auditStore.append(.init(kind: .preference, ruleVersions: [preference.rawValue], paths: [], bytes: 0, result: enabled ? "enabled" : "disabled"))
-        refreshActivity()
-    }
-    func resetPreference(_ preference: SystemPreference) {
-        preferenceService.reset(preference)
-        try? auditStore.append(.init(kind: .preference, ruleVersions: [preference.rawValue], paths: [], bytes: 0, result: "reset to macOS default"))
-        refreshActivity()
-    }
-    func setMenuMonitor(enabled: Bool) {
-        menuMonitor = enabled
-        UserDefaults.standard.set(enabled, forKey: "menuBarMonitorEnabled")
-        try? auditStore.append(.init(kind: .preference, ruleVersions: ["menuBarMonitor"], paths: [], bytes: 0, result: enabled ? "enabled" : "disabled"))
-        refreshActivity()
-    }
-    func exportAudit(_ format: AuditExportFormat) {
-        let panel = NSSavePanel()
-        panel.nameFieldStringValue = format.fileName
-        panel.allowedContentTypes = [format.contentType]
-        guard panel.runModal() == .OK, let url = panel.url else { return }
-        do {
-            let data: Data
-            switch format {
-            case .json: data = try auditStore.exportJSON()
-            case .markdown: data = Data(auditStore.exportMarkdown().utf8)
-            }
-            try data.write(to: url, options: .atomic)
-            message = "Exported local activity to \(url.lastPathComponent)."
-        } catch { message = error.localizedDescription }
-    }
-    func refreshActivity() { auditRecords = auditStore.records(); recoveryItems = recoveryStore.allItems() }
 }
 
 enum CleanupPresentationPhase {
@@ -501,4 +433,8 @@ private struct SecondWindApplicationView: View {
     }
 }
 
-@MainActor @Observable private final class NavigationModel { var section: AppSection? = .dashboard }
+@MainActor
+@Observable
+private final class NavigationModel {
+    var section: AppSection? = .dashboard
+}

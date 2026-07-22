@@ -3,7 +3,7 @@ import SecondWindCore
 
 /// Append-only local snapshot persistence. Snapshot data is kept in Application
 /// Support and is never uploaded or used to load rules.
-public final class StorageSnapshotStore: @unchecked Sendable {
+public final class StorageSnapshotStore: Store, @unchecked Sendable {
     private let snapshotFileURL: URL
     private let fileManager: FileManager
 

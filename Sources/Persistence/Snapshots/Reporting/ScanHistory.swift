@@ -1,4 +1,5 @@
 import Foundation
+import SecondWindCore
 
 /// One local scan in chronological context. The values are derived solely from
 /// stored snapshots, so the history has no independent persistence format.
@@ -11,7 +12,7 @@ public struct ScanHistoryEntry: Identifiable, Sendable {
     public var id: UUID { snapshot.id }
 }
 
-public struct ScanHistoryBuilder: Sendable {
+public struct ScanHistoryBuilder: Builder {
     public init() {}
 
     public func build(snapshots: [StorageSnapshot]) -> [ScanHistoryEntry] {

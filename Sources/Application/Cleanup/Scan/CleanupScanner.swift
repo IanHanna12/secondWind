@@ -1,7 +1,7 @@
 import Foundation
 import SecondWindCore
 
-public struct CleanupScanner: Sendable {
+public struct CleanupScanner: Scanning {
     public let home: URL
     private let fileSystem: any FileSystem
     private let rules: [BuiltInRule]

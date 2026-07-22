@@ -7,7 +7,7 @@ candidates and making deliberate storage changes. It is independently
 implemented and has no telemetry, analytics, cloud sync, remote rule downloads,
 or update checks.
 
-> **0.5.1 Preview** — Second Wind is an early, locally distributed preview.
+> **0.6.0 Preview** — Second Wind is an early, locally distributed preview.
 > Its core cleanup, audit, Recovery, and storage-change flows are implemented,
 > but interfaces, rules, and stored formats may still change incompatibly.
 > Preview downloads are not notarized and macOS may require an explicit
@@ -17,9 +17,9 @@ Second Wind is intentionally conservative. It only acts on locations it
 explicitly understands. Unknown or ambiguous data is left untouched rather
 than guessed at.
 
-> **Latest update · 21 July 2026** Recovery storage now stays immediately
-> usable even after larger cleanup actions: Restore and Delete appear before a
-> concise, expandable activity timeline.
+> **Latest update · 23 July 2026** Cleanup and scanning now use clearer,
+> operation-based progress and outcomes, while the Cleanup selection remains
+> responsive even for larger result sets.
 > Read the [update history](UPDATES.md).
 
 Read the project's [philosophy](PHILOSOPHY.md) for the principles behind those

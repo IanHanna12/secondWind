@@ -1,8 +1,9 @@
 import Darwin
+import SecondWindCore
 
 /// Resolves the Unix owner of a process reported by Darwin. This keeps
 /// libproc details out of privilege-policy code.
-public struct DarwinProcessOwnerResolver: Sendable {
+public struct DarwinProcessOwnerResolver: Resolver {
     public struct ProcessOwner: Sendable {
         public let userID: uid_t
         public let groupID: gid_t

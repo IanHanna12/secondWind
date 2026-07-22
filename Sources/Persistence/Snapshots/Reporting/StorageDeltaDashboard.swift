@@ -1,4 +1,5 @@
 import Foundation
+import SecondWindCore
 
 /// A compact, UI-neutral summary of how known storage changed since the last
 /// local snapshot. It only reorders and highlights StorageSnapshotReport data.
@@ -29,7 +30,7 @@ public struct StorageDeltaDashboard: Sendable {
     public var hasComparison: Bool { comparisonDate != nil }
 }
 
-public struct StorageDeltaDashboardBuilder: Sendable {
+public struct StorageDeltaDashboardBuilder: Builder {
     public init() {}
 
     public func build(report: StorageSnapshotReport) -> StorageDeltaDashboard {

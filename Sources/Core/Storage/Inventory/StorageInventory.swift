@@ -11,11 +11,6 @@ public struct StorageInventory: Sendable {
         self.entries = entries.sorted { $0.byteSize > $1.byteSize }
     }
 
-    public static func capture(findings: [Finding], recoveryItems: [RecoveryItem], at date: Date = Date()) -> StorageInventory {
-        let findingEntries = findings.map { StorageInventoryEntry($0) }
-        let recoveryEntries = recoveryItems.map(StorageInventoryEntry.init)
-        return StorageInventory(capturedAt: date, entries: findingEntries + recoveryEntries)
-    }
 }
 
 public enum StorageCategory: String, Codable, CaseIterable, Identifiable, Sendable {
@@ -136,6 +131,21 @@ public struct StorageInventoryEntry: Hashable, Identifiable, Sendable {
         self.countsTowardCategoryTotal = countsTowardCategoryTotal
         self.modifiedAt = modifiedAt
         self.applicationAssociations = applicationAssociations
+    }
+
+    public init(_ observation: StorageObservation, countsTowardCategoryTotal: Bool = true) {
+        key = "storage|\(observation.identity.volumeID)|\(observation.identity.resolvedPath)"
+        title = observation.title
+        path = observation.identity.resolvedPath
+        category = observation.category
+        byteSize = observation.byteSize
+        origin = observation.origin
+        explanation = observation.explanation
+        risk = observation.risk
+        isActionable = observation.risk.isExecutable && observation.supportedAction != .none
+        self.countsTowardCategoryTotal = countsTowardCategoryTotal
+        modifiedAt = observation.modifiedAt
+        applicationAssociations = observation.applicationAssociations
     }
 
     /// Returns this immutable entry with its resolved application metadata.

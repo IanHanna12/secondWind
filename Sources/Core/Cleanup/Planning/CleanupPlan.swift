@@ -27,8 +27,16 @@ public enum Risk: String, Codable, CaseIterable, Sendable {
     public var isExecutable: Bool { self != .protected }
 }
 
-public enum MatchConfidence: String, Codable, Sendable { case exact, needsUserReview }
-public enum SupportedAction: String, Codable, Sendable { case none, cleanup, uninstall }
+public enum MatchConfidence: String, Codable, Sendable {
+    case exact
+    case needsUserReview
+}
+
+public enum SupportedAction: String, Codable, Sendable {
+    case none
+    case cleanup
+    case uninstall
+}
 public enum PlanDestination: Codable, CaseIterable, Sendable {
     case recovery
     case finderTrash
@@ -48,7 +56,11 @@ public enum PlanDestination: Codable, CaseIterable, Sendable {
         case "recovery", "quarantine": self = .recovery
         case "finderTrash": self = .finderTrash
         case "systemTask": self = .systemTask
-        default: throw DecodingError.dataCorruptedError(in: try decoder.singleValueContainer(), debugDescription: "Unknown cleanup destination: \(value)")
+        default:
+            throw DecodingError.dataCorruptedError(
+                in: try decoder.singleValueContainer(),
+                debugDescription: "Unknown cleanup destination: \(value)"
+            )
         }
     }
 
@@ -79,7 +91,18 @@ public struct Finding: Codable, Hashable, Identifiable, Sendable {
     public let confidence: MatchConfidence
 
     public init(id: UUID = UUID(), ruleID: String, ruleVersion: Int, title: String, path: String, byteSize: Int64, category: FindingCategory? = nil, origin: String, explanation: String, risk: Risk, supportedAction: SupportedAction, confidence: MatchConfidence) {
-        self.id = id; self.ruleID = ruleID; self.ruleVersion = ruleVersion; self.title = title; self.path = path; self.byteSize = byteSize; self.category = category; self.origin = origin; self.explanation = explanation; self.risk = risk; self.supportedAction = supportedAction; self.confidence = confidence
+        self.id = id
+        self.ruleID = ruleID
+        self.ruleVersion = ruleVersion
+        self.title = title
+        self.path = path
+        self.byteSize = byteSize
+        self.category = category
+        self.origin = origin
+        self.explanation = explanation
+        self.risk = risk
+        self.supportedAction = supportedAction
+        self.confidence = confidence
     }
 }
 
@@ -94,7 +117,12 @@ public struct CleanupPlan: Codable, Identifiable, Sendable {
     public private(set) var confirmedAt: Date?
 
     public init(id: UUID = UUID(), createdAt: Date = Date(), destination: PlanDestination, actions: [PlanAction], warnings: [String] = [], confirmedAt: Date? = nil) {
-        self.id = id; self.createdAt = createdAt; self.destination = destination; self.actions = actions; self.warnings = warnings; self.confirmedAt = confirmedAt
+        self.id = id
+        self.createdAt = createdAt
+        self.destination = destination
+        self.actions = actions
+        self.warnings = warnings
+        self.confirmedAt = confirmedAt
     }
 
     public func confirmed(at date: Date = Date()) -> CleanupPlan {
@@ -113,16 +141,32 @@ public struct PlanAction: Codable, Hashable, Identifiable, Sendable {
     public let risk: Risk
     public let action: SupportedAction
     public let confidence: MatchConfidence
+    public let category: FindingCategory?
 
-    public init(id: UUID = UUID(), findingID: UUID, ruleID: String, ruleVersion: Int, title: String, sourcePath: String, byteSize: Int64, risk: Risk, action: SupportedAction, confidence: MatchConfidence) {
-        self.id = id; self.findingID = findingID; self.ruleID = ruleID; self.ruleVersion = ruleVersion; self.title = title; self.sourcePath = sourcePath; self.byteSize = byteSize; self.risk = risk; self.action = action; self.confidence = confidence
+    public init(id: UUID = UUID(), findingID: UUID, ruleID: String, ruleVersion: Int, title: String, sourcePath: String, byteSize: Int64, risk: Risk, action: SupportedAction, confidence: MatchConfidence, category: FindingCategory? = nil) {
+        self.id = id
+        self.findingID = findingID
+        self.ruleID = ruleID
+        self.ruleVersion = ruleVersion
+        self.title = title
+        self.sourcePath = sourcePath
+        self.byteSize = byteSize
+        self.risk = risk
+        self.action = action
+        self.confidence = confidence
+        self.category = category
     }
 
     public var ruleVersionDescription: String { "\(ruleID) v\(ruleVersion)" }
 }
 
 public enum PlanError: LocalizedError, Equatable {
-    case noActions, protectedFinding(String), unsupportedAction(String), destinationNotAllowed(String), invalidPath(String), planNotConfirmed
+    case noActions
+    case protectedFinding(String)
+    case unsupportedAction(String)
+    case destinationNotAllowed(String)
+    case invalidPath(String)
+    case planNotConfirmed
     public var errorDescription: String? {
         switch self {
         case .noActions: return "The plan has no executable actions."

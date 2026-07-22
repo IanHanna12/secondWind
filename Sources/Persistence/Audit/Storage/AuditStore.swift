@@ -1,7 +1,7 @@
 import Foundation
 import SecondWindCore
 
-public struct AuditStore: AuditRecording, Sendable {
+public struct AuditStore: AuditStoring, Sendable {
     public let auditFileURL: URL
 
     public init(fileURL: URL? = nil) {
@@ -10,8 +10,9 @@ public struct AuditStore: AuditRecording, Sendable {
             .appendingPathComponent("SecondWind/audit.jsonl")
     }
 
-    /// Appends compact JSON so each audit record occupies one line in the
-    /// JSONL file. This deliberately does not use the pretty-printing encoder.
+    /// Updates the JSONL document by atomic replacement. It retains the
+    /// line-oriented format while preventing an interrupted append from
+    /// leaving a half-written activity record behind.
     public func append(_ record: AuditRecord) throws {
         let fileManager = FileManager.default
         try fileManager.createDirectory(
@@ -23,20 +24,11 @@ public struct AuditStore: AuditRecording, Sendable {
         encoder.dateEncodingStrategy = .iso8601
         let data = try encoder.encode(record)
 
-        let handle: FileHandle
-        if fileManager.fileExists(atPath: auditFileURL.path) {
-            handle = try FileHandle(forWritingTo: auditFileURL)
-            try handle.seekToEnd()
-        } else {
-            guard fileManager.createFile(atPath: auditFileURL.path, contents: nil) else {
-                throw CocoaError(.fileWriteUnknown)
-            }
-            handle = try FileHandle(forWritingTo: auditFileURL)
-        }
-
-        defer { try? handle.close() }
-        handle.write(data)
-        handle.write(Data("\n".utf8))
+        let existing = (try? Data(contentsOf: auditFileURL)) ?? Data()
+        var updated = existing
+        updated.append(data)
+        updated.append(Data("\n".utf8))
+        try updated.write(to: auditFileURL, options: .atomic)
     }
 
     public func records() -> [AuditRecord] {

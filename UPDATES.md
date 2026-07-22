@@ -6,9 +6,24 @@ linked Git commit.
 
 ## Current public development version
 
-**0.5.1 Preview** — Recovery storage stays immediately actionable after larger
-cleanup actions. The app is distributed locally as a non-notarized preview;
-interfaces, rules, and stored formats may still change incompatibly.
+**0.6.0 Preview** — Operational trust: scan, cleanup, Recovery, and local
+activity now share clearer operation outcomes and durable context. The app is
+distributed locally as a non-notarized preview; interfaces, rules, and stored
+formats may still change incompatibly.
+
+## 23 July 2026
+
+- Cleanup selection updates only the selected item and its aggregate counters;
+  filtering, sorting, category totals, and review explanations are prepared
+  when scan results or filters change instead of on every click.
+- Scan and cleanup flows now share operation identity, progress, cancellation,
+  typed failures, and local activity where appropriate.
+- Scan results are collected as observations, then reconciled only when paths
+  overlap or conflict. Incomplete scans do not replace the last completed view.
+- Cleanup records explicit action outcomes and performs a focused read-only
+  verification after execution.
+- Recovery and policy persistence carry schema and context information forward
+  rather than inferring historical context from the current machine.
 
 ## 21 July 2026
 

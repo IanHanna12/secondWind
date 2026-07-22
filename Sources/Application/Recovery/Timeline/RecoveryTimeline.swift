@@ -29,7 +29,7 @@ public enum RecoveryTimelineEvent: Identifiable, Sendable {
     }
 }
 
-public struct RecoveryTimelineBuilder: Sendable {
+public struct RecoveryTimelineBuilder: Builder {
     private let calendar: Calendar
 
     public init(calendar: Calendar = .current) {

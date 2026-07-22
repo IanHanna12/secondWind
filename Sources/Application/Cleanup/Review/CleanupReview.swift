@@ -71,7 +71,7 @@ public enum CleanupRecoveryAvailability: Sendable, Equatable {
 
 /// Produces review-ready cleanup candidates from the current scan results.
 /// It is deliberately pure so every screen sees the same explanation.
-public struct CleanupReviewBuilder: Sendable {
+public struct CleanupReviewBuilder: Builder {
     public init() {}
 
     public func build(findings: [Finding]) -> [CleanupReviewCandidate] {

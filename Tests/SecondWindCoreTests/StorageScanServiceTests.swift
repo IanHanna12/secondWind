@@ -12,11 +12,11 @@ final class StorageScanServiceTests: XCTestCase {
         let auditStore = AuditStore(fileURL: root.appendingPathComponent("audit.jsonl"))
         let snapshotStore = StorageSnapshotStore(fileURL: root.appendingPathComponent("snapshots.json"))
         let service = LocalStorageScanService(
-            auditRecorder: auditStore,
+            auditStore: auditStore,
             snapshotService: StorageSnapshotService(store: snapshotStore),
             discoverApplications: { _ in [] },
             observeInventory: { _, findings, recoveryItems, _ in
-                StorageInventory.capture(findings: findings, recoveryItems: recoveryItems)
+                StorageInventory(entries: findings.map { StorageInventoryEntry($0) } + recoveryItems.map { StorageInventoryEntry($0) })
             }
         )
         let request = StorageScanRequest(
@@ -56,10 +56,10 @@ final class StorageScanServiceTests: XCTestCase {
 
         let auditStore = AuditStore(fileURL: root.appendingPathComponent("audit.jsonl"))
         let service = LocalStorageScanService(
-            auditRecorder: auditStore,
+            auditStore: auditStore,
             discoverApplications: { _ in [] },
             observeInventory: { _, findings, recoveryItems, _ in
-                StorageInventory.capture(findings: findings, recoveryItems: recoveryItems)
+                StorageInventory(entries: findings.map { StorageInventoryEntry($0) } + recoveryItems.map { StorageInventoryEntry($0) })
             }
         )
         let request = StorageScanRequest(home: root, rules: [], recoveryItems: [], totalBytes: 1_000, availableBytes: 500)

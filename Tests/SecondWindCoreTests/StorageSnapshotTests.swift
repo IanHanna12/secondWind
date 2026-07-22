@@ -56,7 +56,10 @@ final class StorageSnapshotTests: XCTestCase {
             createdAt: Date(), byteSize: 3_000_000
         )
 
-        let inventory = StorageInventory.capture(findings: [finding], recoveryItems: [recovery])
+        let inventory = StorageInventory(entries: [
+            StorageInventoryEntry(finding),
+            StorageInventoryEntry(recovery)
+        ])
 
         XCTAssertEqual(inventory.entries.count, 2)
         XCTAssertEqual(inventory.entries.first { $0.category == StorageCategory.developerStorage }?.title, "Derived Data")

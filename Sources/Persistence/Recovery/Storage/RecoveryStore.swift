@@ -2,7 +2,7 @@ import Foundation
 import SecondWindCore
 import SecondWindMacOS
 
-public struct RecoveryStore: RecoveryRepository, @unchecked Sendable {
+public struct RecoveryStore: RecoveryStoring, RecoveryContextStoring, @unchecked Sendable {
     public let root: URL
     private let fileManager: FileManager
 
@@ -16,6 +16,12 @@ public struct RecoveryStore: RecoveryRepository, @unchecked Sendable {
     /// Moves a file or directory into a per-item recovery folder and records
     /// the original location in a manifest beside its payload.
     public func storeInRecovery(_ sourceURL: URL, planID: UUID) throws -> RecoveryItem {
+        try storeInRecovery(sourceURL, planID: planID, context: .init())
+    }
+
+    /// Stores the rule and application context observed at cleanup time so
+    /// Recovery views never need to guess it from a later scan.
+    public func storeInRecovery(_ sourceURL: URL, planID: UUID, context: RecoveryContext) throws -> RecoveryItem {
         let source = sourceURL.standardizedFileURL
         let recoveryItemID = UUID()
         let recoveryItemFolder = root.appendingPathComponent(recoveryItemID.uuidString, isDirectory: true)
@@ -30,7 +36,8 @@ public struct RecoveryStore: RecoveryRepository, @unchecked Sendable {
             originalPath: source.path,
             recoveryPath: payloadURL.path,
             createdAt: Date(),
-            byteSize: byteSize
+            byteSize: byteSize,
+            context: context
         )
 
         try fileManager.createDirectory(at: payloadFolder, withIntermediateDirectories: true)
@@ -64,21 +71,66 @@ public struct RecoveryStore: RecoveryRepository, @unchecked Sendable {
             .sorted { $0.createdAt > $1.createdAt }
     }
 
+    public func integrityReport(for item: RecoveryItem) -> RecoveryIntegrityReport {
+        do {
+            let payloadURL = try validatedRecoveryPayloadURL(for: item)
+            guard fileManager.fileExists(atPath: payloadURL.path) else {
+                return .init(item: item, status: .damaged(reason: "The stored payload is missing."), canRestore: false)
+            }
+            let manifestURL = payloadURL.deletingLastPathComponent().deletingLastPathComponent().appendingPathComponent("manifest.json")
+            guard let manifestData = try? Data(contentsOf: manifestURL),
+                  let manifest = try? JSONDecoder.secondWind.decode(RecoveryItem.self, from: manifestData),
+                  manifest.id == item.id,
+                  manifest.recoveryPath == item.recoveryPath else {
+                return .init(item: item, status: .damaged(reason: "The Recovery manifest is missing or does not match its payload."), canRestore: false)
+            }
+            let size = LocalFileSystem(fileManager: fileManager).fileSize(at: payloadURL)
+            guard size == item.byteSize else {
+                return .init(item: item, status: .damaged(reason: "The stored payload size no longer matches its manifest."), canRestore: false)
+            }
+            return .init(item: item, status: .healthy, canRestore: true)
+        } catch {
+            return .init(item: item, status: .damaged(reason: "This item is outside its own Recovery folder."), canRestore: false)
+        }
+    }
+
     /// Restores the payload to its original path. If another item now occupies
     /// that path, this chooses a descriptive available restore destination.
     @discardableResult
     public func restore(_ item: RecoveryItem) throws -> URL {
+        try restore(item, choice: .besideExisting)
+    }
+
+    /// The UI must collect an explicit choice before this method is called.
+    /// The legacy `restore(_:)` remains a compatibility wrapper for callers
+    /// that historically chose a descriptive adjacent destination.
+    @discardableResult
+    public func restore(_ item: RecoveryItem, choice: RestoreConflictChoice) throws -> URL {
+        // Validate containment before reporting integrity. A forged manifest
+        // must remain an invalid item, never be softened into a missing file.
         let payloadURL = try validatedRecoveryPayloadURL(for: item)
+        let integrity = integrityReport(for: item)
+        guard integrity.canRestore else { throw RecoveryError.missingPayload }
         guard fileManager.fileExists(atPath: payloadURL.path) else {
             throw RecoveryError.missingPayload
         }
 
         var restoreDestination = URL(fileURLWithPath: item.originalPath)
+        if case let .anotherDestination(destination) = choice {
+            restoreDestination = destination.standardizedFileURL
+        }
         let restoreDirectory = restoreDestination.deletingLastPathComponent()
         try fileManager.createDirectory(at: restoreDirectory, withIntermediateDirectories: true)
 
         if fileManager.fileExists(atPath: restoreDestination.path) {
-            restoreDestination = try availableRestoreDestination(for: restoreDestination, item: item)
+            switch choice {
+            case .cancel: throw RecoveryError.restoreDestinationConflict
+            case .besideExisting: restoreDestination = try availableRestoreDestination(for: restoreDestination, item: item)
+            case .anotherDestination:
+                throw RecoveryError.restoreDestinationConflict
+            case .replaceAfterDestructiveConfirmation:
+                try fileManager.removeItem(at: restoreDestination)
+            }
         }
 
         try fileManager.moveItem(at: payloadURL, to: restoreDestination)

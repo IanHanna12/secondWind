@@ -31,7 +31,9 @@ public struct StorageSnapshotService: Sendable {
     }
 
     public func capture(findings: [Finding], totalBytes: Int64, availableBytes: Int64, at date: Date = Date()) -> StorageSnapshot {
-        capture(inventory: StorageInventory.capture(findings: findings, recoveryItems: [], at: date), totalBytes: totalBytes, availableBytes: availableBytes)
+        let entries = findings.map { StorageInventoryEntry($0) }
+        let inventory = StorageInventory(capturedAt: date, entries: entries)
+        return capture(inventory: inventory, totalBytes: totalBytes, availableBytes: availableBytes)
     }
 
     public func report(for current: StorageSnapshot, history: [StorageSnapshot]) -> StorageSnapshotReport {

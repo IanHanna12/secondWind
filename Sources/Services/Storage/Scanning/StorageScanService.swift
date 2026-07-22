@@ -4,32 +4,6 @@ import SecondWindApplication
 import SecondWindMacOS
 import SecondWindPersistence
 
-/// Input for one complete, local storage scan.
-public struct StorageScanRequest: Sendable {
-    public let home: URL
-    public let rules: [BuiltInRule]
-    public let recoveryItems: [RecoveryItem]
-    public let totalBytes: Int64
-    public let availableBytes: Int64
-    public let startedAt: Date
-
-    public init(
-        home: URL,
-        rules: [BuiltInRule],
-        recoveryItems: [RecoveryItem],
-        totalBytes: Int64,
-        availableBytes: Int64,
-        startedAt: Date = Date()
-    ) {
-        self.home = home.standardizedFileURL
-        self.rules = rules
-        self.recoveryItems = recoveryItems
-        self.totalBytes = totalBytes
-        self.availableBytes = availableBytes
-        self.startedAt = startedAt
-    }
-}
-
 /// Updates emitted during a local scan. UI code can render these on its actor
 /// without knowing how scanning, inventory construction, or snapshots work.
 public enum StorageScanEvent: Sendable {
@@ -83,7 +57,7 @@ public struct StorageScanSummary: Sendable {
     }
 }
 
-public protocol StorageScanning: Sendable {
+public protocol StorageScanning: Scanning {
     func events(for request: StorageScanRequest) -> AsyncStream<StorageScanEvent>
 }
 
@@ -91,13 +65,13 @@ public protocol StorageScanning: Sendable {
 /// here because CleanupScanner is synchronous and can perform long filesystem
 /// reads. It emits values only; it never touches UI state.
 public struct LocalStorageScanService: StorageScanning, Sendable {
-    private let auditRecorder: any AuditRecording
+    private let auditStore: any AuditStoring
     private let snapshotService: StorageSnapshotService
     private let discoverApplications: @Sendable (URL) -> [InstalledApplication]
     private let observeInventory: @Sendable (URL, [Finding], [RecoveryItem], [InstalledApplication]) -> StorageInventory
 
     public init(
-        auditRecorder: any AuditRecording,
+        auditStore: any AuditStoring,
         snapshotService: StorageSnapshotService = StorageSnapshotService(),
         discoverApplications: @escaping @Sendable (URL) -> [InstalledApplication] = { home in
             InstalledApplicationInventory(home: home).discoverApplications()
@@ -110,7 +84,7 @@ public struct LocalStorageScanService: StorageScanning, Sendable {
             )
         }
     ) {
-        self.auditRecorder = auditRecorder
+        self.auditStore = auditStore
         self.snapshotService = snapshotService
         self.discoverApplications = discoverApplications
         self.observeInventory = observeInventory
@@ -118,7 +92,7 @@ public struct LocalStorageScanService: StorageScanning, Sendable {
 
     public func events(for request: StorageScanRequest) -> AsyncStream<StorageScanEvent> {
         AsyncStream { continuation in
-            let auditRecorder = auditRecorder
+            let auditStore = auditStore
             let snapshotService = snapshotService
             let discoverApplications = discoverApplications
             let observeInventory = observeInventory
@@ -149,7 +123,8 @@ public struct LocalStorageScanService: StorageScanning, Sendable {
                 let orphanFindings = ApplicationStorageObserver(home: request.home)
                     .orphanCleanupFindings(for: applications)
                 let allFindings = findings + orphanFindings
-                try? auditRecorder.append(.init(
+                try? auditStore.append(.init(
+                    operationID: request.operationID,
                     kind: .scan,
                     ruleVersions: Array(Set(allFindings.map { "\($0.ruleID) v\($0.ruleVersion)" })).sorted(),
                     paths: allFindings.map(\.path),

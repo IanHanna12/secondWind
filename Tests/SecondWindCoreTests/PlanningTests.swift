@@ -110,9 +110,9 @@ final class PlanningTests: XCTestCase {
         let audit = AuditStore(fileURL: root.appendingPathComponent("audit.jsonl"))
         let executor = PlanExecutor(
             planBuilder: PlanBuilder(home: home),
-            recoveryRepository: RecoveryStore(root: root.appendingPathComponent("recovery")),
+            recoveryStore: RecoveryStore(root: root.appendingPathComponent("recovery")),
             trashMover: FailOnSecondTrash(),
-            auditRecorder: audit
+            auditStore: audit
         )
 
         do {
@@ -138,7 +138,7 @@ final class PlanningTests: XCTestCase {
     }
 }
 
-private actor FailOnSecondTrash: moveToTrash {
+private actor FailOnSecondTrash: TrashMoving {
     private var calls = 0
 
     func moveToTrash(_ url: URL) async throws {

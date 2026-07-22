@@ -8,17 +8,23 @@ public protocol FileSystem: Sendable {
     func regularFiles(in root: URL, maximumDepth: Int) -> [URL]
 }
 
-public protocol RecoveryRepository: Sendable {
+public protocol RecoveryStoring: Store {
     func storeInRecovery(_ sourceURL: URL, planID: UUID) throws -> RecoveryItem
     func allItems() -> [RecoveryItem]
     @discardableResult func restore(_ item: RecoveryItem) throws -> URL
     func deletePermanently(_ item: RecoveryItem) throws
 }
 
-public protocol AuditRecording: Sendable {
+/// A Recovery repository which persists the context known at cleanup time.
+/// Kept separate so legacy repositories do not need a migration immediately.
+public protocol RecoveryContextStoring: RecoveryStoring {
+    func storeInRecovery(_ sourceURL: URL, planID: UUID, context: RecoveryContext) throws -> RecoveryItem
+}
+
+public protocol AuditStoring: Store {
     func append(_ record: AuditRecord) throws
 }
 
-public protocol moveToTrash: Sendable {
+public protocol TrashMoving: Mover {
     func moveToTrash(_ url: URL) async throws
 }

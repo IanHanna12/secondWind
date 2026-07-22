@@ -50,7 +50,29 @@ struct RulesScreen: View {
         .navigationTitle("Rules")
     }
 
-    private func enabledBinding(for rule: BuiltInRule) -> Binding<Bool> { Binding(get: { !policy.disabledBuiltInRuleIDs.contains(rule.id) }, set: { enabled in if enabled { policy.disabledBuiltInRuleIDs.remove(rule.id) } else { policy.disabledBuiltInRuleIDs.insert(rule.id) }; save() }) }
-    private func save() { try? store.save(policy) }
-    private func export() { let panel = NSSavePanel(); panel.nameFieldStringValue = "Second Wind Rules.json"; panel.allowedContentTypes = [.json]; guard panel.runModal() == .OK, let url = panel.url else { return }; try? JSONEncoder.secondWind.encode(policy).write(to: url, options: .atomic) }
+    private func enabledBinding(for rule: BuiltInRule) -> Binding<Bool> {
+        Binding(
+            get: { !policy.disabledBuiltInRuleIDs.contains(rule.id) },
+            set: { enabled in
+                if enabled {
+                    policy.disabledBuiltInRuleIDs.remove(rule.id)
+                } else {
+                    policy.disabledBuiltInRuleIDs.insert(rule.id)
+                }
+                save()
+            }
+        )
+    }
+
+    private func save() {
+        try? store.save(policy)
+    }
+
+    private func export() {
+        let panel = NSSavePanel()
+        panel.nameFieldStringValue = "Second Wind Rules.json"
+        panel.allowedContentTypes = [.json]
+        guard panel.runModal() == .OK, let url = panel.url else { return }
+        try? JSONEncoder.secondWind.encode(policy).write(to: url, options: .atomic)
+    }
 }
