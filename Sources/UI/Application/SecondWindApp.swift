@@ -94,7 +94,7 @@ struct CleanupCompletion {
     var cleanupCompletion: CleanupCompletion?
     var message: String?
     var isScanning = false
-    var scanProgress: ScanProgress?
+    var scanProgress: OperationProgress?
     var snapshot: DashboardSnapshot
     var liveMetrics: LiveSystemMetrics
     var applications: [InstalledApplication] = []
@@ -104,20 +104,20 @@ struct CleanupCompletion {
     var inspectedApplicationID: String?
     var auditRecords: [AuditRecord]
     var recoveryItems: [RecoveryItem]
+    var recoveryIntegrityReports: [UUID: RecoveryIntegrityReport] = [:]
     var storageInventory = StorageInventory(entries: [])
     var storageSnapshots = StorageSnapshotReport.empty
     var latestScanSummary: StorageScanSummary?
+    var rulePolicy: RulePolicy
     var menuMonitor = UserDefaults.standard.bool(forKey: "menuBarMonitorEnabled")
     let home = FileManager.default.homeDirectoryForCurrentUser
-    let auditStore: AuditStore
-    let recoveryStore: RecoveryStore
+    let localStore: LocalDataStore
     let monitorService: MonitorService
     let liveMetricsService: LiveMetricsService
     let storageScanService: any StorageScanning
     let applicationInventoryBuilder = ApplicationInventoryBuilder()
     let preferenceService = PreferenceService()
-    let rulePolicyStore = RulePolicyStore()
-    let operationCoordinator: any OperationCoordinator = LocalOperationCoordinator()
+    let operationCoordinator: any OperationCoordinator
     var scanTask: Task<Void, Never>?
     var activeScanID: UUID?
     var activeOperationID: OperationID?
@@ -127,16 +127,25 @@ struct CleanupCompletion {
 
     init() {
         let monitorService = MonitorService()
-        let auditStore = AuditStore()
-        let recoveryStore = RecoveryStore()
+        let localStore = LocalDataStore()
+        let operationCoordinator = LocalOperationCoordinator()
         self.monitorService = monitorService
-        self.auditStore = auditStore
-        self.recoveryStore = recoveryStore
-        self.storageScanService = LocalStorageScanService(auditStore: auditStore)
+        self.localStore = localStore
+        self.operationCoordinator = operationCoordinator
+        self.storageScanService = LocalStorageScanService(
+            operationCoordinator: operationCoordinator,
+            auditStore: localStore.audit,
+            snapshotService: StorageSnapshotService(store: localStore.snapshots)
+        )
         self.liveMetricsService = LiveMetricsService()
         self.snapshot = monitorService.snapshot()
-        self.auditRecords = auditStore.records()
-        self.recoveryItems = recoveryStore.allItems()
+        self.auditRecords = localStore.audit.records()
+        self.rulePolicy = localStore.rulePolicy.policy()
+        let storedRecoveryItems = localStore.recovery.allItems()
+        self.recoveryItems = storedRecoveryItems
+        self.recoveryIntegrityReports = Dictionary(
+            uniqueKeysWithValues: storedRecoveryItems.map { ($0.id, localStore.recovery.integrityReport(for: $0)) }
+        )
         liveMetrics = .unavailable
     }
 
@@ -145,42 +154,34 @@ struct CleanupCompletion {
         let scanID = UUID()
         activeScanID = scanID
         isScanning = true
-        let rules = rulePolicyStore.effectiveRules()
+        let rules = localStore.rulePolicy.effectiveRules()
         let recoveryItems = recoveryItems
         let totalBytes = snapshot.storageTotal
         let availableBytes = snapshot.storageAvailable
-        let coordinator = operationCoordinator
         let storageScanService = storageScanService
-        scanTask = Task { [weak self, storageScanService, coordinator, recoveryItems, totalBytes, availableBytes] in
-            let operationID: OperationID
-            do { operationID = try await coordinator.start(kind: .scan) }
-            catch {
-                guard let self, self.activeScanID == scanID else { return }
-                self.isScanning = false
-                self.message = error.localizedDescription
-                return
-            }
-            guard let self, self.activeScanID == scanID else {
-                await coordinator.cancel(operationID)
-                return
-            }
-            self.activeOperationID = operationID
-            let request = StorageScanRequest(operationID: operationID, home: self.home, rules: rules, recoveryItems: recoveryItems, totalBytes: totalBytes, availableBytes: availableBytes)
+        scanTask = Task { [weak self, storageScanService, recoveryItems, totalBytes, availableBytes] in
+            guard let self else { return }
+            let request = StorageScanRequest(home: self.home, rules: rules, recoveryItems: recoveryItems, totalBytes: totalBytes, availableBytes: availableBytes)
             var completed = false
-            for await event in storageScanService.events(for: request) {
+            for await event in storageScanService.scan(request) {
                 guard self.activeScanID == scanID else { return }
                 switch event {
+                case let .started(run):
+                    self.activeOperationID = run.id
                 case let .progress(progress):
                     self.scanProgress = progress
-                    await coordinator.updateProgress(.init(completedUnits: progress.completedUnits, totalUnits: progress.totalUnits, title: progress.currentTitle), for: operationID)
                 case let .completed(result):
                     self.apply(result)
                     completed = true
+                case let .failed(run):
+                    self.applyFailedScan(run)
+                    return
                 }
             }
-            if completed { await coordinator.finish(operationID) }
-            else if Task.isCancelled { await coordinator.cancel(operationID) }
-            else { await coordinator.fail(operationID, with: .providerUnavailable(provider: "Local scan")) }
+            if !completed && !Task.isCancelled {
+                self.isScanning = false
+                self.message = "The scan ended before a completed inventory was available."
+            }
         }
     }
 
@@ -197,6 +198,15 @@ struct CleanupCompletion {
         activeOperationID = nil
         scanTask = nil
         refreshActivity()
+    }
+
+    private func applyFailedScan(_ run: ScanRun) {
+        isScanning = false
+        scanProgress = nil
+        activeScanID = nil
+        activeOperationID = nil
+        scanTask = nil
+        message = run.failure?.localizedDescription ?? "The scan could not complete. The previous completed inventory remains visible."
     }
     func cancelScan() {
         scanTask?.cancel()
@@ -217,7 +227,7 @@ struct CleanupCompletion {
                 destination: .recovery
             )
             if let plan = proposedPlan {
-                try? auditStore.append(.init(
+                try? localStore.audit.append(.init(
                     kind: .dryRun,
                     planID: plan.id,
                     ruleVersions: plan.actions.map(\.ruleVersionDescription),
@@ -243,9 +253,9 @@ struct CleanupCompletion {
             let finderTrashMover = FinderTrashMover()
             let executor = PlanExecutor(
                 planBuilder: planBuilder,
-                recoveryStore: recoveryStore,
+                recoveryStore: localStore.recovery,
                 trashMover: finderTrashMover,
-                auditStore: auditStore
+                auditStore: localStore.audit
             )
             let coordinator = operationCoordinator
             Task {
@@ -302,7 +312,7 @@ struct CleanupCompletion {
 
             if !movedPaths.isEmpty {
                 let movedFindings = currentFindings.filter { finding in movedPaths.contains(finding.path) }
-                try? auditStore.append(.init(
+                try? localStore.audit.append(.init(
                     kind: .manualTrash,
                     ruleVersions: Array(Set(movedFindings.map { "\($0.ruleID) v\($0.ruleVersion)" })).sorted(),
                     paths: movedPaths,
@@ -318,7 +328,7 @@ struct CleanupCompletion {
                 replaceFindings(remainingFindings)
             }
             if !failures.isEmpty {
-                try? auditStore.append(.init(
+                try? localStore.audit.append(.init(
                     kind: .failure,
                     ruleVersions: Array(Set(currentFindings.map { "\($0.ruleID) v\($0.ruleVersion)" })).sorted(),
                     paths: failures.map(\.path),
@@ -403,7 +413,7 @@ private struct SecondWindApplicationView: View {
             case .monitor: SystemMonitorScreen(model: model)
             case .cleanup: CleanupScreen(model: model)
             case .applications: ApplicationsScreen(model: model) { navigation.section = .cleanup }
-            case .rules: RulesScreen()
+            case .rules: RulesScreen(model: model)
             case .volumeCheck: VolumeCheckScreen(model: model)
             case .systemTasks: SystemTasksScreen(model: model)
             case .settings: SettingsScreen(model: model)

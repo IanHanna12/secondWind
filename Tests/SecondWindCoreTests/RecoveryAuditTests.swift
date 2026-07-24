@@ -80,4 +80,71 @@ final class RecoveryAuditTests: XCTestCase {
         XCTAssertFalse(FileManager.default.fileExists(atPath: source.path))
         XCTAssertTrue(store.allItems().isEmpty)
     }
+
+    func testBatchRestoreRestoresEveryPreflightedItem() throws {
+        let root = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        defer { try? FileManager.default.removeItem(at: root) }
+
+        let firstSource = root.appendingPathComponent("Caches/first.bin")
+        let secondSource = root.appendingPathComponent("Caches/second.bin")
+        try FileManager.default.createDirectory(at: firstSource.deletingLastPathComponent(), withIntermediateDirectories: true)
+        try Data("first".utf8).write(to: firstSource)
+        try Data("second".utf8).write(to: secondSource)
+
+        let store = RecoveryStore(root: root.appendingPathComponent("Recovery"))
+        let first = try store.storeInRecovery(firstSource, planID: UUID())
+        let second = try store.storeInRecovery(secondSource, planID: UUID())
+
+        let outcome = store.restore([first, second], choice: .besideExisting)
+
+        XCTAssertEqual(outcome.action, .restore)
+        XCTAssertEqual(outcome.completedCount, 2)
+        XCTAssertEqual(outcome.requiresAttentionCount, 0)
+        XCTAssertEqual(try Data(contentsOf: firstSource), Data("first".utf8))
+        XCTAssertEqual(try Data(contentsOf: secondSource), Data("second".utf8))
+        XCTAssertTrue(store.allItems().isEmpty)
+    }
+
+    func testBatchRestoreDoesNotStartWhenAnySelectedItemFailsIntegrity() throws {
+        let root = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        defer { try? FileManager.default.removeItem(at: root) }
+
+        let firstSource = root.appendingPathComponent("Caches/first.bin")
+        let secondSource = root.appendingPathComponent("Caches/second.bin")
+        try FileManager.default.createDirectory(at: firstSource.deletingLastPathComponent(), withIntermediateDirectories: true)
+        try Data("first".utf8).write(to: firstSource)
+        try Data("second".utf8).write(to: secondSource)
+
+        let store = RecoveryStore(root: root.appendingPathComponent("Recovery"))
+        let first = try store.storeInRecovery(firstSource, planID: UUID())
+        let second = try store.storeInRecovery(secondSource, planID: UUID())
+        try FileManager.default.removeItem(at: URL(fileURLWithPath: second.recoveryPath))
+
+        let outcome = store.restore([first, second], choice: .besideExisting)
+
+        XCTAssertEqual(outcome.completedCount, 0)
+        XCTAssertEqual(outcome.results.count, 2)
+        XCTAssertFalse(FileManager.default.fileExists(atPath: firstSource.path))
+        XCTAssertTrue(FileManager.default.fileExists(atPath: first.recoveryPath))
+        XCTAssertFalse(FileManager.default.fileExists(atPath: secondSource.path))
+    }
+
+    func testSingleConfirmedReplacementRestoresRecoveryPayload() throws {
+        let root = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        defer { try? FileManager.default.removeItem(at: root) }
+
+        let source = root.appendingPathComponent("Reports/report.txt")
+        try FileManager.default.createDirectory(at: source.deletingLastPathComponent(), withIntermediateDirectories: true)
+        try Data("stored".utf8).write(to: source)
+
+        let store = RecoveryStore(root: root.appendingPathComponent("Recovery"))
+        let item = try store.storeInRecovery(source, planID: UUID())
+        try Data("current".utf8).write(to: source)
+
+        let outcome = store.restore([item], choice: .replaceAfterDestructiveConfirmation)
+
+        XCTAssertEqual(outcome.completedCount, outcome.results.count)
+        XCTAssertEqual(try Data(contentsOf: source), Data("stored".utf8))
+        XCTAssertTrue(store.allItems().isEmpty)
+    }
 }

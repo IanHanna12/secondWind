@@ -6,10 +6,24 @@ linked Git commit.
 
 ## Current public development version
 
-**0.6.0 Preview** — Operational trust: scan, cleanup, Recovery, and local
-activity now share clearer operation outcomes and durable context. The app is
+**0.7.0 Preview** — Recover & Undo: scanning now has one provider-based path
+to the visible inventory, while Recovery supports integrity checks, explicit
+conflict decisions, and multi-item actions with visible outcomes. The app is
 distributed locally as a non-notarized preview; interfaces, rules, and stored
 formats may still change incompatibly.
+
+## 24 July 2026
+
+- A single scan runner now owns provider execution, operation identity,
+  cancellation, progress, and the completed inventory. The UI adapts that one
+  result rather than starting a second scan.
+- Only duplicate or parent-child-overlapping storage observations are sent to
+  reconciliation; ordinary observations become inventory entries directly.
+- Recovery supports integrity checks, batch preflight, rollback reporting, and
+  explicit restore-conflict choices. Restore and permanent deletion record a
+  result for every selected item.
+- Local audit, Recovery, rule-policy, and snapshot persistence are reached
+  through one local data store at the app boundary.
 
 ## 23 July 2026
 

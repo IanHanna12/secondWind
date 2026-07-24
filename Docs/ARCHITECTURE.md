@@ -9,7 +9,7 @@ flowchart TB
 
     Input["<b>1 · Local inputs</b><br/>Built-in and enabled local rules<br/>Explicit known local paths<br/>Installed application discovery"]
 
-    Scan["<b>2 · Read-only scan workflow</b><br/>CleanupScanner<br/>Storage inventory observer<br/>Application association resolver<br/>LocalStorageScanService"]
+    Scan["<b>2 · Read-only scan workflow</b><br/>LocalStorageScanService<br/>LocalScanRunner<br/>Storage inventory providers + capture<br/>Application association resolver"]
 
     Facts["<b>3 · Shared domain facts</b><br/>Findings: reason, size, risk, action<br/>StorageInventory: known entries only<br/>ApplicationInventory: read-only grouping"]
 

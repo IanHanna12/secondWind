@@ -92,20 +92,20 @@ final class ApplicationInventoryTests: XCTestCase {
         XCTAssertFalse(projection.possibleOrphans.first?.entries.first?.storage.isActionable ?? true)
     }
 
-    func testObserverFindsIdentifierBasedOrphanAsReviewRequiredStorage() throws {
+    func testDiscoveryFindsIdentifierBasedOrphanAsReviewRequiredStorage() throws {
         let root = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
         defer { try? FileManager.default.removeItem(at: root) }
 
         let orphan = root.appendingPathComponent("Library/Caches/com.example.legacy/cache.bin")
         try write(Data(repeating: 4, count: 128), to: orphan)
 
-        let entries = ApplicationStorageObserver(home: root).entries(for: [])
+        let entries = ApplicationStorageDiscovery(home: root).inventoryEntries(for: [])
         let observed = try XCTUnwrap(entries.first { $0.path == orphan.deletingLastPathComponent().path })
 
         XCTAssertEqual(observed.risk, .reviewRequired)
         XCTAssertTrue(observed.isActionable)
 
-        let findings = ApplicationStorageObserver(home: root).orphanCleanupFindings(for: [])
+        let findings = ApplicationStorageDiscovery(home: root).orphanCleanupFindings(for: [])
         let finding = try XCTUnwrap(findings.first { $0.path == observed.path })
         XCTAssertEqual(finding.risk, .reviewRequired)
         XCTAssertEqual(finding.supportedAction, .cleanup)

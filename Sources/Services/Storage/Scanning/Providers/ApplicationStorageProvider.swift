@@ -17,8 +17,32 @@ public struct ApplicationStorageProvider: StorageInventoryProvider {
         if await cancellationRequested() || Task.isCancelled { throw OperationFailure.cancelled }
         let applications = discoverApplications(request.home)
         if await cancellationRequested() || Task.isCancelled { throw OperationFailure.cancelled }
-        return ScanProviderResult(provider: name, observations: applications.map { application in
+        let applicationObservations = applications.map { application in
             StorageObservation(identity: .init(volumeID: "local", resolvedPath: application.url.path), title: application.displayName, category: .applications, byteSize: fileSystem.fileSize(at: application.url), origin: "Application inventory", explanation: "Application bundle observed locally. Use Applications to inspect its exact support paths before creating a removal plan.", risk: .protected)
-        })
+        }
+        let storageDiscovery = ApplicationStorageDiscovery(home: request.home)
+        let supportObservations = storageDiscovery.inventoryEntries(for: applications).map(storageObservation)
+        let orphanFindings = storageDiscovery.orphanCleanupFindings(for: applications)
+        return ScanProviderResult(
+            provider: name,
+            observations: applicationObservations + supportObservations,
+            findings: orphanFindings,
+            applications: applications
+        )
+    }
+
+    private func storageObservation(from entry: StorageInventoryEntry) -> StorageObservation {
+        StorageObservation(
+            identity: .init(volumeID: "local", resolvedPath: entry.path ?? entry.key),
+            title: entry.title,
+            category: entry.category,
+            byteSize: entry.byteSize,
+            origin: entry.origin,
+            explanation: entry.explanation,
+            risk: entry.risk,
+            supportedAction: entry.isActionable ? .cleanup : .none,
+            modifiedAt: entry.modifiedAt,
+            applicationAssociations: entry.applicationAssociations
+        )
     }
 }

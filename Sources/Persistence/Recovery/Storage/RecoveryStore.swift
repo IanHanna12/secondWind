@@ -94,6 +94,13 @@ public struct RecoveryStore: RecoveryStoring, RecoveryContextStoring, @unchecked
         }
     }
 
+    /// A conflict is intentionally discovered before the UI offers a restore
+    /// action. The user, not a default, decides whether to preserve, replace,
+    /// or choose a different destination.
+    public func hasRestoreDestinationConflict(for item: RecoveryItem) -> Bool {
+        fileManager.fileExists(atPath: URL(fileURLWithPath: item.originalPath).standardizedFileURL.path)
+    }
+
     /// Restores the payload to its original path. If another item now occupies
     /// that path, this chooses a descriptive available restore destination.
     @discardableResult
@@ -138,6 +145,88 @@ public struct RecoveryStore: RecoveryStoring, RecoveryContextStoring, @unchecked
         return restoreDestination
     }
 
+    /// Restores a set of Recovery items only after every item has passed a
+    /// read-only preflight. Until every move succeeds, the manifests remain in
+    /// place, which lets a later failure move completed items back into their
+    /// original Recovery folders.
+    public func restore(_ items: [RecoveryItem], choice: RestoreConflictChoice) -> RecoveryBatchOutcome {
+        let uniqueItems = uniqueItems(from: items)
+        guard !uniqueItems.isEmpty else { return .init(action: .restore, results: []) }
+
+        // Replacement is intentionally a one-item operation. The UI presents
+        // a second destructive confirmation before reaching this path; a
+        // batch never gets permission to replace several current files.
+        if case .replaceAfterDestructiveConfirmation = choice, uniqueItems.count == 1, let item = uniqueItems.first {
+            do {
+                let destination = try restore(item, choice: choice)
+                return .init(action: .restore, results: [.init(itemID: item.id, outcome: .completed(destinationPath: destination.path))])
+            } catch {
+                return .init(action: .restore, results: [.init(itemID: item.id, outcome: .failed(reason: error.localizedDescription))])
+            }
+        }
+
+        var prepared: [(item: RecoveryItem, payload: URL, destination: URL)] = []
+        var preflightResults: [RecoveryItemActionResult] = []
+        for item in uniqueItems {
+            do {
+                let payload = try validatedRecoveryPayloadURL(for: item)
+                guard integrityReport(for: item).canRestore else {
+                    preflightResults.append(.init(itemID: item.id, outcome: .skipped(reason: "The item did not pass its Recovery integrity check.")))
+                    continue
+                }
+                let destination = try restoreDestination(for: item, choice: choice)
+                prepared.append((item, payload, destination))
+            } catch {
+                preflightResults.append(.init(itemID: item.id, outcome: .skipped(reason: error.localizedDescription)))
+            }
+        }
+
+        // A batch is all-or-nothing at admission. Nothing is moved until every
+        // selected item is known to be restorable with the chosen policy.
+        guard preflightResults.isEmpty else {
+            let deferred = prepared.map {
+                RecoveryItemActionResult(itemID: $0.item.id, outcome: .skipped(reason: "The batch did not start because another selected item was not ready."))
+            }
+            return .init(action: .restore, results: preflightResults + deferred)
+        }
+
+        var restored: [(item: RecoveryItem, payload: URL, destination: URL)] = []
+        var failure: (item: RecoveryItem, error: Error)?
+        for entry in prepared {
+            do {
+                try fileManager.createDirectory(at: entry.destination.deletingLastPathComponent(), withIntermediateDirectories: true)
+                try fileManager.moveItem(at: entry.payload, to: entry.destination)
+                restored.append(entry)
+            } catch {
+                failure = (entry.item, error)
+                break
+            }
+        }
+
+        if let failure {
+            return rollbackRestore(
+                restored,
+                failure: failure,
+                unstarted: prepared.dropFirst(restored.count + 1).map(\.item)
+            )
+        }
+
+        // The moves are now complete. Removing the empty per-item folders is
+        // the commit step; a failure here still rolls every payload back.
+        for entry in restored {
+            do {
+                try fileManager.removeItem(at: entry.payload.deletingLastPathComponent().deletingLastPathComponent())
+            } catch {
+                return rollbackRestore(restored, failure: (entry.item, error), unstarted: [])
+            }
+        }
+
+        return .init(
+            action: .restore,
+            results: restored.map { .init(itemID: $0.item.id, outcome: .completed(destinationPath: $0.destination.path)) }
+        )
+    }
+
     /// Permanently removes an item that is already inside this store. Callers
     /// must obtain explicit user confirmation; this method never runs as part
     /// of cleanup execution or automated retention.
@@ -147,6 +236,47 @@ public struct RecoveryStore: RecoveryStoring, RecoveryContextStoring, @unchecked
             throw RecoveryError.missingPayload
         }
         try fileManager.removeItem(at: payloadURL.deletingLastPathComponent().deletingLastPathComponent())
+    }
+
+    /// Permanently deleting a verified Recovery item is deliberately
+    /// irreversible. Every item is preflighted first, so a known damaged or
+    /// forged selection cannot cause an earlier item to be deleted.
+    public func deletePermanently(_ items: [RecoveryItem]) -> RecoveryBatchOutcome {
+        let uniqueItems = uniqueItems(from: items)
+        guard !uniqueItems.isEmpty else { return .init(action: .permanentDelete, results: []) }
+
+        var payloads: [(item: RecoveryItem, payload: URL)] = []
+        var preflightResults: [RecoveryItemActionResult] = []
+        for item in uniqueItems {
+            do {
+                let payload = try validatedRecoveryPayloadURL(for: item)
+                guard fileManager.fileExists(atPath: payload.path) else { throw RecoveryError.missingPayload }
+                payloads.append((item, payload))
+            } catch {
+                preflightResults.append(.init(itemID: item.id, outcome: .skipped(reason: error.localizedDescription)))
+            }
+        }
+        guard preflightResults.isEmpty else {
+            let deferred = payloads.map {
+                RecoveryItemActionResult(itemID: $0.item.id, outcome: .skipped(reason: "The batch did not start because another selected item was not ready."))
+            }
+            return .init(action: .permanentDelete, results: preflightResults + deferred)
+        }
+
+        var results: [RecoveryItemActionResult] = []
+        for (index, entry) in payloads.enumerated() {
+            do {
+                try fileManager.removeItem(at: entry.payload.deletingLastPathComponent().deletingLastPathComponent())
+                results.append(.init(itemID: entry.item.id, outcome: .completed(destinationPath: nil)))
+            } catch {
+                results.append(.init(itemID: entry.item.id, outcome: .failed(reason: error.localizedDescription)))
+                results.append(contentsOf: payloads.dropFirst(index + 1).map {
+                    .init(itemID: $0.item.id, outcome: .skipped(reason: "Not deleted because an earlier permanent deletion failed."))
+                })
+                break
+            }
+        }
+        return .init(action: .permanentDelete, results: results)
     }
 
     /// A manifest describes a payload created by this store; it must never be
@@ -167,6 +297,64 @@ public struct RecoveryStore: RecoveryStoring, RecoveryContextStoring, @unchecked
         let supplied = URL(fileURLWithPath: item.recoveryPath).standardizedFileURL
         guard supplied == expected else { throw RecoveryError.invalidItem }
         return supplied
+    }
+
+    private func restoreDestination(for item: RecoveryItem, choice: RestoreConflictChoice) throws -> URL {
+        let originalDestination = URL(fileURLWithPath: item.originalPath).standardizedFileURL
+        switch choice {
+        case .cancel:
+            throw RecoveryError.restoreDestinationConflict
+        case .besideExisting:
+            return fileManager.fileExists(atPath: originalDestination.path)
+                ? try availableRestoreDestination(for: originalDestination, item: item)
+                : originalDestination
+        case let .anotherDestination(destination):
+            let standardizedDestination = destination.standardizedFileURL
+            guard !fileManager.fileExists(atPath: standardizedDestination.path) else {
+                throw RecoveryError.restoreDestinationConflict
+            }
+            return standardizedDestination
+        case .replaceAfterDestructiveConfirmation:
+            // Batch replacement would destroy several unrelated current files
+            // and cannot be rolled back. It stays a separate single-item
+            // operation after the UI's destructive confirmation.
+            throw RecoveryError.restoreDestinationConflict
+        }
+    }
+
+    private func rollbackRestore(
+        _ restored: [(item: RecoveryItem, payload: URL, destination: URL)],
+        failure: (item: RecoveryItem, error: Error),
+        unstarted: [RecoveryItem]
+    ) -> RecoveryBatchOutcome {
+        var results: [RecoveryItemActionResult] = []
+        for entry in restored.reversed() {
+            do {
+                let recoveryItemFolder = entry.payload.deletingLastPathComponent().deletingLastPathComponent()
+                let payloadFolder = entry.payload.deletingLastPathComponent()
+                try fileManager.createDirectory(at: payloadFolder, withIntermediateDirectories: true)
+                if !fileManager.fileExists(atPath: recoveryItemFolder.appendingPathComponent("manifest.json").path) {
+                    try writeManifest(entry.item, in: recoveryItemFolder)
+                }
+                guard !fileManager.fileExists(atPath: entry.payload.path) else {
+                    throw RecoveryError.restoreDestinationConflict
+                }
+                try fileManager.moveItem(at: entry.destination, to: entry.payload)
+                results.append(.init(itemID: entry.item.id, outcome: .rolledBack))
+            } catch {
+                results.append(.init(itemID: entry.item.id, outcome: .unresolvedAfterRollback(reason: error.localizedDescription)))
+            }
+        }
+        results.append(.init(itemID: failure.item.id, outcome: .failed(reason: failure.error.localizedDescription)))
+        results.append(contentsOf: unstarted.map {
+            .init(itemID: $0.id, outcome: .skipped(reason: "Not restored because an earlier item failed."))
+        })
+        return .init(action: .restore, results: results)
+    }
+
+    private func uniqueItems(from items: [RecoveryItem]) -> [RecoveryItem] {
+        var processedItemIDs = Set<UUID>()
+        return items.filter { processedItemIDs.insert($0.id).inserted }
     }
 
     private func writeManifest(_ recoveryItem: RecoveryItem, in recoveryItemFolder: URL) throws {

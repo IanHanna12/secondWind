@@ -1,16 +1,18 @@
 import AppKit
 import SwiftUI
 import SecondWindCore
-import SecondWindPersistence
 
 struct RulesScreen: View {
+    let model: SecondWindViewModel
     @State private var policy: RulePolicy
     @State private var route = SafeCleanupRoute.userCaches
     @State private var title = ""
     @State private var explanation = ""
-    private let store = RulePolicyStore()
 
-    init() { _policy = State(initialValue: RulePolicyStore().policy()) }
+    init(model: SecondWindViewModel) {
+        self.model = model
+        _policy = State(initialValue: model.rulePolicy)
+    }
 
     var body: some View {
         List {
@@ -65,7 +67,7 @@ struct RulesScreen: View {
     }
 
     private func save() {
-        try? store.save(policy)
+        model.saveRulePolicy(policy)
     }
 
     private func export() {

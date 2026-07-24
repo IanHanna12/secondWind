@@ -197,7 +197,7 @@ private struct CleanupReadinessCard: View {
     }
     private var detail: String {
         if model.isScanning {
-            let currentTitle = model.scanProgress?.currentTitle ?? "local locations"
+            let currentTitle = model.scanProgress?.title ?? "local locations"
             return "Checking \(currentTitle) · no files are changed while scanning."
         }
         if model.actionableFindingCount > 0 {

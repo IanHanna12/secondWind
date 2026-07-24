@@ -81,6 +81,68 @@ public enum RestoreConflictChoice: Sendable {
     case replaceAfterDestructiveConfirmation
 }
 
+/// A user-visible Recovery action. The action name is deliberately separate
+/// from its individual outcomes: one batch may finish with a mixture of
+/// completed, rolled-back, and unresolved items.
+public enum RecoveryBatchAction: String, Sendable {
+    case restore
+    case permanentDelete
+}
+
+public enum RecoveryItemActionOutcome: Equatable, Sendable {
+    case completed(destinationPath: String?)
+    case skipped(reason: String)
+    case failed(reason: String)
+    case rolledBack
+    case unresolvedAfterRollback(reason: String)
+}
+
+public struct RecoveryItemActionResult: Equatable, Sendable, Identifiable {
+    public let itemID: UUID
+    public let outcome: RecoveryItemActionOutcome
+
+    public init(itemID: UUID, outcome: RecoveryItemActionOutcome) {
+        self.itemID = itemID
+        self.outcome = outcome
+    }
+
+    public var id: UUID { itemID }
+}
+
+/// The durable activity layer records the final result of this value. It does
+/// not hide an item which could not safely be returned to Recovery.
+public struct RecoveryBatchOutcome: Equatable, Sendable {
+    public let action: RecoveryBatchAction
+    public let results: [RecoveryItemActionResult]
+
+    public init(action: RecoveryBatchAction, results: [RecoveryItemActionResult]) {
+        self.action = action
+        self.results = results
+    }
+
+    public var completedCount: Int {
+        results.reduce(into: 0) { count, result in
+            if case .completed = result.outcome { count += 1 }
+        }
+    }
+
+    public var requiresAttentionCount: Int {
+        results.reduce(into: 0) { count, result in
+            switch result.outcome {
+            case .failed, .unresolvedAfterRollback: count += 1
+            case .completed, .skipped, .rolledBack: break
+            }
+        }
+    }
+
+    public var isFullyCompleted: Bool {
+        !results.isEmpty && results.allSatisfy {
+            if case .completed = $0.outcome { return true }
+            return false
+        }
+    }
+}
+
 public enum RecoveryError: LocalizedError, Equatable {
     case missingPayload
     case invalidItem

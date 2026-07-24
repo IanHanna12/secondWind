@@ -4,14 +4,15 @@ import SecondWindApplication
 import SecondWindMacOS
 import SecondWindPersistence
 
-/// Updates emitted during a local scan. UI code can render these on its actor
-/// without knowing how scanning, inventory construction, or snapshots work.
+/// UI-neutral updates from the one local storage scan workflow.
 public enum StorageScanEvent: Sendable {
-    case progress(ScanProgress)
+    case started(ScanRun)
+    case progress(OperationProgress)
     case completed(StorageScanResult)
+    case failed(ScanRun)
 }
 
-/// The completed result of one local scan.
+/// The completed read model from one local scan.
 public struct StorageScanResult: Sendable {
     public let findings: [Finding]
     public let applications: [InstalledApplication]
@@ -57,103 +58,122 @@ public struct StorageScanSummary: Sendable {
     }
 }
 
+/// The app-facing scan contract. It adapts the canonical scan run into the
+/// completed read model; it never starts a second discovery or inventory pass.
 public protocol StorageScanning: Scanning {
-    func events(for request: StorageScanRequest) -> AsyncStream<StorageScanEvent>
+    func scan(_ request: StorageScanRequest) -> AsyncStream<StorageScanEvent>
 }
 
-/// Coordinates a local scan outside the UI layer. The detached worker is owned
-/// here because CleanupScanner is synchronous and can perform long filesystem
-/// reads. It emits values only; it never touches UI state.
+/// Builds the UI read model from the single provider-backed scan run.
 public struct LocalStorageScanService: StorageScanning, Sendable {
-    private let auditStore: any AuditStoring
+    private let scanRunner: any ScanRunner
     private let snapshotService: StorageSnapshotService
-    private let discoverApplications: @Sendable (URL) -> [InstalledApplication]
-    private let observeInventory: @Sendable (URL, [Finding], [RecoveryItem], [InstalledApplication]) -> StorageInventory
 
     public init(
-        auditStore: any AuditStoring,
-        snapshotService: StorageSnapshotService = StorageSnapshotService(),
-        discoverApplications: @escaping @Sendable (URL) -> [InstalledApplication] = { home in
-            InstalledApplicationInventory(home: home).discoverApplications()
-        },
-        observeInventory: @escaping @Sendable (URL, [Finding], [RecoveryItem], [InstalledApplication]) -> StorageInventory = { home, findings, recoveryItems, applications in
-            StorageInventoryObserver(home: home).observe(
-                findings: findings,
-                recoveryItems: recoveryItems,
-                applications: applications
-            )
-        }
+        scanRunner: any ScanRunner,
+        snapshotService: StorageSnapshotService = StorageSnapshotService()
     ) {
-        self.auditStore = auditStore
+        self.scanRunner = scanRunner
         self.snapshotService = snapshotService
-        self.discoverApplications = discoverApplications
-        self.observeInventory = observeInventory
     }
 
-    public func events(for request: StorageScanRequest) -> AsyncStream<StorageScanEvent> {
+    public init(
+        operationCoordinator: any OperationCoordinator = LocalOperationCoordinator(),
+        auditStore: any AuditStoring,
+        providers: [any StorageInventoryProvider] = [RuleFindingsStorageProvider(), PersonalFoldersStorageProvider(), ApplicationStorageProvider(), RecoveryStorageProvider()],
+        inventoryCapture: any StorageInventoryCapture = LocalStorageInventoryCapture(),
+        loadReader: any SystemLoadReading = FixedSystemLoadReader(),
+        snapshotService: StorageSnapshotService = StorageSnapshotService()
+    ) {
+        self.init(
+            scanRunner: LocalScanRunner(
+                operationCoordinator: operationCoordinator,
+                providers: providers,
+                inventoryCapture: inventoryCapture,
+                loadReader: loadReader,
+                auditStore: auditStore
+            ),
+            snapshotService: snapshotService
+        )
+    }
+
+    public func scan(_ request: StorageScanRequest) -> AsyncStream<StorageScanEvent> {
         AsyncStream { continuation in
-            let auditStore = auditStore
-            let snapshotService = snapshotService
-            let discoverApplications = discoverApplications
-            let observeInventory = observeInventory
-            let worker = Task.detached {
-                continuation.yield(.progress(.init(
-                    completedUnits: 0,
-                    totalUnits: request.rules.count + 3,
-                    currentTitle: "Preparing local scan"
-                )))
-
-                let fileSystem = LocalFileSystem()
-                let outcome = CleanupScanner(home: request.home, fileSystem: fileSystem, rules: request.rules).scan { progress in
-                    guard !Task.isCancelled else { return false }
-                    continuation.yield(.progress(progress))
-                    return true
+            let worker = Task {
+                var providerResults: [ScanProviderResult] = []
+                for await event in scanRunner.scan(request) {
+                    switch event {
+                    case let .started(run):
+                        continuation.yield(.started(run))
+                    case let .progress(progress):
+                        continuation.yield(.progress(progress))
+                    case let .providerResult(result):
+                        providerResults.append(result)
+                    case let .completed(run, inventory):
+                        let result = completedResult(
+                            inventory: inventory,
+                            providerResults: providerResults,
+                            request: request
+                        )
+                        continuation.yield(.completed(result))
+                        _ = run
+                    case let .failed(run):
+                        continuation.yield(.failed(run))
+                    }
                 }
-                guard case let .completed(findings) = outcome, !Task.isCancelled else {
-                    continuation.finish()
-                    return
-                }
-
-                continuation.yield(.progress(.init(
-                    completedUnits: request.rules.count + 3,
-                    totalUnits: request.rules.count + 3,
-                    currentTitle: "Finishing scan"
-                )))
-                let applications = discoverApplications(request.home)
-                let orphanFindings = ApplicationStorageObserver(home: request.home)
-                    .orphanCleanupFindings(for: applications)
-                let allFindings = findings + orphanFindings
-                try? auditStore.append(.init(
-                    operationID: request.operationID,
-                    kind: .scan,
-                    ruleVersions: Array(Set(allFindings.map { "\($0.ruleID) v\($0.ruleVersion)" })).sorted(),
-                    paths: allFindings.map(\.path),
-                    bytes: allFindings.reduce(0) { $0 + $1.byteSize },
-                    result: "\(allFindings.count) findings"
-                ))
-                let inventory = observeInventory(request.home, allFindings, request.recoveryItems, applications)
-                let snapshot = snapshotService.capture(
-                    inventory: inventory,
-                    totalBytes: request.totalBytes,
-                    availableBytes: request.availableBytes
-                )
-                let history = (try? snapshotService.store.append(snapshot)) ?? snapshotService.store.snapshots()
-                let report = snapshotService.report(for: snapshot, history: history)
-                let result = StorageScanResult(
-                    findings: allFindings,
-                    applications: applications,
-                    inventory: inventory,
-                    snapshotReport: report,
-                    summary: StorageScanSummary(findings: allFindings, inventory: inventory, startedAt: request.startedAt)
-                )
-                guard !Task.isCancelled else {
-                    continuation.finish()
-                    return
-                }
-                continuation.yield(.completed(result))
                 continuation.finish()
             }
             continuation.onTermination = { @Sendable _ in worker.cancel() }
+        }
+    }
+
+    private func completedResult(
+        inventory: StorageInventory,
+        providerResults: [ScanProviderResult],
+        request: StorageScanRequest
+    ) -> StorageScanResult {
+        let facts = StorageScanFacts(providerResults: providerResults)
+        let associatedInventory = ApplicationAssociationResolver(home: request.home).resolve(
+            inventory: inventory,
+            applications: facts.applications
+        )
+        let snapshot = snapshotService.capture(
+            inventory: associatedInventory,
+            totalBytes: request.totalBytes,
+            availableBytes: request.availableBytes
+        )
+        let history = (try? snapshotService.store.append(snapshot)) ?? snapshotService.store.snapshots()
+        let snapshotReport = snapshotService.report(for: snapshot, history: history)
+        return StorageScanResult(
+            findings: facts.findings,
+            applications: facts.applications,
+            inventory: associatedInventory,
+            snapshotReport: snapshotReport,
+            summary: StorageScanSummary(findings: facts.findings, inventory: associatedInventory, startedAt: request.startedAt)
+        )
+    }
+}
+
+private struct StorageScanFacts: Sendable {
+    let findings: [Finding]
+    let applications: [InstalledApplication]
+
+    init(providerResults: [ScanProviderResult]) {
+        var findingsByID: [UUID: Finding] = [:]
+        var applicationsByID: [String: InstalledApplication] = [:]
+
+        for providerResult in providerResults {
+            for finding in providerResult.findings {
+                findingsByID[finding.id] = finding
+            }
+            for application in providerResult.applications {
+                applicationsByID[application.id] = application
+            }
+        }
+
+        findings = findingsByID.values.sorted { $0.path < $1.path }
+        applications = applicationsByID.values.sorted {
+            $0.displayName.localizedStandardCompare($1.displayName) == .orderedAscending
         }
     }
 }

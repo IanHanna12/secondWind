@@ -70,11 +70,24 @@ public struct ScanRun: Identifiable, Codable, Sendable {
 public struct ScanProviderResult: Sendable {
     public let provider: String
     public let observations: [StorageObservation]
+    /// Provider facts which are not representable by a storage observation,
+    /// but belong to this same scan. They let the coordinator remain the one
+    /// source of truth for scan work rather than triggering a second discovery.
+    public let findings: [Finding]
+    public let applications: [InstalledApplication]
     public let summary: String
 
-    public init(provider: String, observations: [StorageObservation], summary: String? = nil) {
+    public init(
+        provider: String,
+        observations: [StorageObservation],
+        findings: [Finding] = [],
+        applications: [InstalledApplication] = [],
+        summary: String? = nil
+    ) {
         self.provider = provider
         self.observations = observations
+        self.findings = findings
+        self.applications = applications
         self.summary = summary ?? "\(observations.count) locations observed"
     }
 }

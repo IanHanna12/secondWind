@@ -2,8 +2,8 @@ import Foundation
 import SecondWindCore
 import SecondWindApplication
 
-/// Builds an inventory from provider facts and delegates only conflicts to the
-/// reconciler. This is the underlying system operation, not a repository.
+/// Builds an inventory from provider facts and delegates only ambiguous facts
+/// to the reconciler. This is an underlying system operation, not a repository.
 public struct LocalStorageInventoryCapture: StorageInventoryCapture {
     private let reconciler: any StorageInventoryReconciler
 
@@ -13,25 +13,53 @@ public struct LocalStorageInventoryCapture: StorageInventoryCapture {
 
     public func capture(_ results: [ScanProviderResult], capturedAt: Date = Date()) -> StorageInventory {
         let observations = results.flatMap(\.observations)
-        let grouped = Dictionary(grouping: observations, by: \.identity)
-        var conflictingIdentities = Set(grouped.filter { $0.value.count > 1 }.map(\.key))
-        let identities = Array(grouped.keys)
-        for (index, identity) in identities.enumerated() {
-            for candidate in identities.dropFirst(index + 1) where overlaps(identity, candidate) {
-                conflictingIdentities.insert(identity)
-                conflictingIdentities.insert(candidate)
-            }
-        }
-        let direct = grouped
-            .filter { !conflictingIdentities.contains($0.key) }
-            .flatMap(\.value)
+        let observationsByIdentity = Dictionary(grouping: observations, by: \.identity)
+        let identitiesNeedingReconciliation = identitiesNeedingReconciliation(
+            in: observationsByIdentity
+        )
+
+        let directEntries = observations
+            .filter { !identitiesNeedingReconciliation.contains($0.identity) }
             .map { StorageInventoryEntry($0) }
-        let conflicts = observations.filter { conflictingIdentities.contains($0.identity) }
-        return StorageInventory(capturedAt: capturedAt, entries: direct + reconciler.reconcile(conflicts))
+        let observationsNeedingReconciliation = observations.filter {
+            identitiesNeedingReconciliation.contains($0.identity)
+        }
+        let reconciledEntries = observationsNeedingReconciliation.isEmpty
+            ? []
+            : reconciler.reconcile(observationsNeedingReconciliation)
+
+        return StorageInventory(
+            capturedAt: capturedAt,
+            entries: directEntries + reconciledEntries
+        )
     }
 
-    private func overlaps(_ left: StorageIdentity, _ right: StorageIdentity) -> Bool {
+    /// Reconciliation is needed only when providers describe one location
+    /// more than once or when one described path contains another.
+    private func identitiesNeedingReconciliation(
+        in observationsByIdentity: [StorageIdentity: [StorageObservation]]
+    ) -> Set<StorageIdentity> {
+        var identitiesNeedingReconciliation = Set<StorageIdentity>()
+
+        for (identity, observations) in observationsByIdentity where observations.count > 1 {
+            identitiesNeedingReconciliation.insert(identity)
+        }
+
+        let identities = Array(observationsByIdentity.keys)
+        for leftIndex in identities.indices.dropLast() {
+            let leftIdentity = identities[leftIndex]
+            for rightIdentity in identities[(leftIndex + 1)...] where pathsOverlap(leftIdentity, rightIdentity) {
+                identitiesNeedingReconciliation.insert(leftIdentity)
+                identitiesNeedingReconciliation.insert(rightIdentity)
+            }
+        }
+
+        return identitiesNeedingReconciliation
+    }
+
+    private func pathsOverlap(_ left: StorageIdentity, _ right: StorageIdentity) -> Bool {
         guard left.volumeID == right.volumeID, left.resolvedPath != right.resolvedPath else { return false }
-        return left.resolvedPath.hasPrefix(right.resolvedPath + "/") || right.resolvedPath.hasPrefix(left.resolvedPath + "/")
+        return left.resolvedPath.hasPrefix(right.resolvedPath + "/")
+            || right.resolvedPath.hasPrefix(left.resolvedPath + "/")
     }
 }

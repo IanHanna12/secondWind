@@ -155,10 +155,10 @@ public struct ApplicationAssociationResolver: @unchecked Sendable, ApplicationAs
     }
 }
 
-/// Observes a deliberately small set of exact, identifier-based application
+/// Discovers a deliberately small set of exact, identifier-based application
 /// paths. Storage for installed apps stays protected. A path with no matching
 /// installed app can become a review-required cleanup finding.
-public struct ApplicationStorageObserver: @unchecked Sendable {
+public struct ApplicationStorageDiscovery: @unchecked Sendable {
     private let home: URL
     private let fileManager: FileManager
     private let fileSystem: LocalFileSystem
@@ -169,7 +169,7 @@ public struct ApplicationStorageObserver: @unchecked Sendable {
         fileSystem = LocalFileSystem(fileManager: fileManager)
     }
 
-    public func entries(for applications: [InstalledApplication]) -> [StorageInventoryEntry] {
+    public func inventoryEntries(for applications: [InstalledApplication]) -> [StorageInventoryEntry] {
         let installedIdentifiers = Set(applications.compactMap(\.bundleIdentifier))
         let installedEntries = applications.flatMap { application in
             guard let identifier = application.bundleIdentifier else { return [StorageInventoryEntry]() }

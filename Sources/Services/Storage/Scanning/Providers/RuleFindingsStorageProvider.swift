@@ -16,6 +16,6 @@ public struct RuleFindingsStorageProvider: StorageInventoryProvider {
         guard case let .completed(findings) = outcome else { throw OperationFailure.cancelled }
         return ScanProviderResult(provider: name, observations: findings.map { finding in
             StorageObservation(identity: .init(volumeID: "local", resolvedPath: finding.path), title: finding.title, category: .forFindingCategory(finding.category), byteSize: finding.byteSize, origin: finding.origin, explanation: finding.explanation, risk: finding.risk, supportedAction: finding.supportedAction)
-        })
+        }, findings: findings)
     }
 }

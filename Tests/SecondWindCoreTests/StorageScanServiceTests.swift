@@ -1,6 +1,7 @@
 import Foundation
 import XCTest
 @testable import SecondWindCore
+@testable import SecondWindApplication
 @testable import SecondWindPersistence
 @testable import SecondWindServices
 
@@ -11,13 +12,13 @@ final class StorageScanServiceTests: XCTestCase {
 
         let auditStore = AuditStore(fileURL: root.appendingPathComponent("audit.jsonl"))
         let snapshotStore = StorageSnapshotStore(fileURL: root.appendingPathComponent("snapshots.json"))
+        let scanRunner = LocalScanRunner(
+            providers: scanProviders(discoverApplications: { _ in [] }),
+            auditStore: auditStore
+        )
         let service = LocalStorageScanService(
-            auditStore: auditStore,
-            snapshotService: StorageSnapshotService(store: snapshotStore),
-            discoverApplications: { _ in [] },
-            observeInventory: { _, findings, recoveryItems, _ in
-                StorageInventory(entries: findings.map { StorageInventoryEntry($0) } + recoveryItems.map { StorageInventoryEntry($0) })
-            }
+            scanRunner: scanRunner,
+            snapshotService: StorageSnapshotService(store: snapshotStore)
         )
         let request = StorageScanRequest(
             home: root,
@@ -29,12 +30,16 @@ final class StorageScanServiceTests: XCTestCase {
 
         var reportedProgress = false
         var result: StorageScanResult?
-        for await event in service.events(for: request) {
+        for await event in service.scan(request) {
             switch event {
-            case StorageScanEvent.progress(_):
+            case .started:
+                break
+            case .progress:
                 reportedProgress = true
-            case let StorageScanEvent.completed(completed):
+            case let .completed(completed):
                 result = completed
+            case .failed:
+                XCTFail("Expected the scan to complete")
             }
         }
 
@@ -55,17 +60,17 @@ final class StorageScanServiceTests: XCTestCase {
         try Data(repeating: 1, count: 128).write(to: orphan)
 
         let auditStore = AuditStore(fileURL: root.appendingPathComponent("audit.jsonl"))
+        let scanRunner = LocalScanRunner(
+            providers: scanProviders(discoverApplications: { _ in [] }),
+            auditStore: auditStore
+        )
         let service = LocalStorageScanService(
-            auditStore: auditStore,
-            discoverApplications: { _ in [] },
-            observeInventory: { _, findings, recoveryItems, _ in
-                StorageInventory(entries: findings.map { StorageInventoryEntry($0) } + recoveryItems.map { StorageInventoryEntry($0) })
-            }
+            scanRunner: scanRunner
         )
         let request = StorageScanRequest(home: root, rules: [], recoveryItems: [], totalBytes: 1_000, availableBytes: 500)
 
         var result: StorageScanResult?
-        for await event in service.events(for: request) {
+        for await event in service.scan(request) {
             if case let .completed(completed) = event {
                 result = completed
             }
@@ -76,5 +81,16 @@ final class StorageScanServiceTests: XCTestCase {
         XCTAssertEqual(finding.risk, .reviewRequired)
         XCTAssertEqual(finding.supportedAction, .cleanup)
         XCTAssertEqual(finding.confidence, .needsUserReview)
+    }
+
+    private func scanProviders(
+        discoverApplications: @escaping @Sendable (URL) -> [InstalledApplication]
+    ) -> [any StorageInventoryProvider] {
+        [
+            RuleFindingsStorageProvider(),
+            PersonalFoldersStorageProvider(),
+            ApplicationStorageProvider(discoverApplications: discoverApplications),
+            RecoveryStorageProvider()
+        ]
     }
 }

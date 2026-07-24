@@ -14,12 +14,12 @@ public struct CleanupScanner: Scanning {
         scan(progress: { _ in true }).findings
     }
 
-    public func scan(progress: @Sendable (ScanProgress) -> Bool) -> ScanOutcome {
+    public func scan(progress: @Sendable (OperationProgress) -> Bool) -> ScanOutcome {
         let totalUnits = rules.count + 3
         var findings: [Finding] = []
 
         for (index, rule) in rules.enumerated() {
-            guard progress(.init(completedUnits: index, totalUnits: totalUnits, currentTitle: rule.title)) else {
+            guard progress(.init(completedUnits: index, totalUnits: totalUnits, title: rule.title)) else {
                 return .cancelled
             }
             let url = home.appendingPathComponent(rule.relativePath).standardizedFileURL
@@ -27,17 +27,17 @@ public struct CleanupScanner: Scanning {
             findings += findingsForRule(rule, at: url)
         }
 
-        guard progress(.init(completedUnits: rules.count, totalUnits: totalUnits, currentTitle: "Downloads")) else {
+        guard progress(.init(completedUnits: rules.count, totalUnits: totalUnits, title: "Downloads")) else {
             return .cancelled
         }
         findings += reviewRequiredFileFindings(in: home.appendingPathComponent("Downloads"))
 
-        guard progress(.init(completedUnits: rules.count + 1, totalUnits: totalUnits, currentTitle: "Desktop")) else {
+        guard progress(.init(completedUnits: rules.count + 1, totalUnits: totalUnits, title: "Desktop")) else {
             return .cancelled
         }
         findings += reviewRequiredFileFindings(in: home.appendingPathComponent("Desktop"))
 
-        _ = progress(.init(completedUnits: rules.count + 2, totalUnits: totalUnits, currentTitle: "Building known storage inventory"))
+        _ = progress(.init(completedUnits: rules.count + 2, totalUnits: totalUnits, title: "Building known storage inventory"))
         return .completed(findings.filter { $0.byteSize > 0 }.sorted { $0.byteSize > $1.byteSize })
     }
 
@@ -80,19 +80,6 @@ public struct CleanupScanner: Scanning {
             guard size >= (installer ? 50 : 500) * 1_024 * 1_024 else { return nil }
             return Finding(ruleID: installer ? "downloaded-installer" : "large-personal-file", ruleVersion: BuiltInRules.version, title: installer ? "Installer: \(url.lastPathComponent)" : url.lastPathComponent, path: url.path, byteSize: size, category: installer ? .installers : .largeFiles, origin: "Built-in user-file rule v\(BuiltInRules.version)", explanation: installer ? "A downloaded installer that may no longer be needed after successful installation." : "A large personal file whose content is unknown to SecondWind.", risk: .reviewRequired, supportedAction: .cleanup, confidence: .needsUserReview)
         }
-    }
-}
-
-public struct ScanProgress: Sendable {
-    public let completedUnits: Int
-    public let totalUnits: Int
-    public let currentTitle: String
-    public var fraction: Double { Double(completedUnits) / Double(max(1, totalUnits)) }
-
-    public init(completedUnits: Int, totalUnits: Int, currentTitle: String) {
-        self.completedUnits = completedUnits
-        self.totalUnits = totalUnits
-        self.currentTitle = currentTitle
     }
 }
 
