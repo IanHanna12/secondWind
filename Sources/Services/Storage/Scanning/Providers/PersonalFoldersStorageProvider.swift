@@ -18,7 +18,17 @@ public struct PersonalFoldersStorageProvider: StorageInventoryProvider {
             if await cancellationRequested() || Task.isCancelled { throw OperationFailure.cancelled }
             let url = request.home.appendingPathComponent(relativePath)
             guard fileSystem.exists(url) else { continue }
-            observations.append(StorageObservation(identity: .init(volumeID: "local", resolvedPath: url.path), title: title, category: category, byteSize: fileSystem.fileSize(at: url), origin: "Known personal folder", explanation: "Second Wind observes this known folder but never treats the folder itself as a cleanup candidate.", risk: .protected))
+            observations.append(StorageObservation(
+                identity: .init(volumeID: "local", resolvedPath: url.path),
+                title: title,
+                category: category,
+                byteSize: fileSystem.fileSize(at: url),
+                origin: "Known personal folder",
+                explanation: "Second Wind observes this known folder but never treats the folder itself as a cleanup candidate.",
+                risk: .protected,
+                provider: name,
+                discoveryConfidence: .high
+            ))
         }
         return ScanProviderResult(provider: name, observations: observations)
     }

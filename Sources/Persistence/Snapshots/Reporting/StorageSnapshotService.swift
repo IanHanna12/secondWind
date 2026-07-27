@@ -24,7 +24,13 @@ public struct StorageSnapshotService: Sendable {
                 isActionable: entry.isActionable,
                 countsTowardCategoryTotal: entry.countsTowardCategoryTotal,
                 modifiedAt: entry.modifiedAt,
-                applicationAssociations: entry.applicationAssociations
+                applicationAssociations: entry.applicationAssociations,
+                identity: entry.identity,
+                ruleID: entry.ruleID,
+                ruleVersion: entry.ruleVersion,
+                provider: entry.provider,
+                discoveryConfidence: entry.discoveryConfidence,
+                supportedAction: entry.supportedAction
             )
         }.sorted { $0.byteSize > $1.byteSize }
         return StorageSnapshot(capturedAt: inventory.capturedAt, totalBytes: totalBytes, availableBytes: availableBytes, entries: entries)
@@ -47,27 +53,60 @@ public struct StorageSnapshotService: Sendable {
         let currentKeys = Set(current.entries.map(\.key))
         let currentChanges = current.entries.compactMap { entry -> StorageChange? in
             guard let old = oldEntries[entry.key] else {
-                return StorageChange(key: entry.key, title: entry.title, category: entry.category, kind: .newlyObserved, byteChange: entry.byteSize, currentBytes: entry.byteSize, risk: entry.risk, explanation: entry.explanation, isActionable: entry.isActionable)
+                return storageChange(
+                    from: entry,
+                    kind: .newlyObserved,
+                    byteChange: entry.byteSize,
+                    currentBytes: entry.byteSize
+                )
             }
             let byteChange = entry.byteSize - old.byteSize
             guard abs(byteChange) >= minimumMeaningfulChange else { return nil }
-            return StorageChange(key: entry.key, title: entry.title, category: entry.category, kind: byteChange > 0 ? .grew : .shrank, byteChange: byteChange, currentBytes: entry.byteSize, risk: entry.risk, explanation: entry.explanation, isActionable: entry.isActionable)
+            return storageChange(
+                from: entry,
+                kind: byteChange > 0 ? .grew : .shrank,
+                byteChange: byteChange,
+                currentBytes: entry.byteSize
+            )
         }
         let noLongerObserved = previous.entries.compactMap { entry -> StorageChange? in
             guard !currentKeys.contains(entry.key), entry.byteSize >= minimumMeaningfulChange else { return nil }
-            return StorageChange(
-                key: entry.key,
-                title: entry.title,
-                category: entry.category,
+            return storageChange(
+                from: entry,
                 kind: .noLongerObserved,
                 byteChange: -entry.byteSize,
                 currentBytes: 0,
-                risk: entry.risk,
                 explanation: "This location was not observed by the latest scan. It may have moved, changed, or no longer exist.",
                 isActionable: false
             )
         }
         let changes = (currentChanges + noLongerObserved).sorted { abs($0.byteChange) > abs($1.byteChange) }
         return StorageSnapshotReport(current: current, previous: previous, history: orderedHistory, changes: changes)
+    }
+
+    private func storageChange(
+        from entry: StorageSnapshotEntry,
+        kind: StorageChangeKind,
+        byteChange: Int64,
+        currentBytes: Int64,
+        explanation: String? = nil,
+        isActionable: Bool? = nil
+    ) -> StorageChange {
+        StorageChange(
+            key: entry.key,
+            title: entry.title,
+            category: entry.category,
+            kind: kind,
+            byteChange: byteChange,
+            currentBytes: currentBytes,
+            risk: entry.risk,
+            explanation: explanation ?? entry.explanation,
+            isActionable: isActionable ?? entry.isActionable,
+            origin: entry.origin,
+            provider: entry.provider,
+            ruleID: entry.ruleID,
+            ruleVersion: entry.ruleVersion,
+            applicationAssociations: entry.applicationAssociations
+        )
     }
 }

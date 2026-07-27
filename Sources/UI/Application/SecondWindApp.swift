@@ -39,6 +39,8 @@ struct SecondWindMain {
 private enum AppSection: String, CaseIterable, Identifiable {
     case dashboard = "Home"
     case snapshots = "Storage overview"
+    case inventoryInspector = "Inventory inspector"
+    case architecture = "Architecture"
     case developerStorage = "Developer storage"
     case monitor = "System monitor"
     case cleanup = "Clean Up"
@@ -55,6 +57,8 @@ private enum AppSection: String, CaseIterable, Identifiable {
         switch self {
         case .dashboard: return "gauge.with.dots.needle.67percent"
         case .snapshots: return "clock.arrow.trianglehead.counterclockwise.rotate.90"
+        case .inventoryInspector: return "list.bullet.rectangle.portrait"
+        case .architecture: return "point.3.connected.trianglepath.dotted"
         case .developerStorage: return "hammer"
         case .monitor: return "waveform.path.ecg"
         case .cleanup: return "sparkles"
@@ -68,9 +72,22 @@ private enum AppSection: String, CaseIterable, Identifiable {
     }
 }
 
-enum AuditExportFormat { case json, markdown
-    var fileName: String { self == .json ? "Second Wind Activity.json" : "Second Wind Activity.md" }
-    var contentType: UTType { self == .json ? .json : .plainText }
+enum AuditExportFormat {
+    case json
+    case markdown
+    case diagnostics
+
+    var fileName: String {
+        switch self {
+        case .json: return "Second Wind Activity.json"
+        case .markdown: return "Second Wind Activity.md"
+        case .diagnostics: return "Second Wind Diagnostics.json"
+        }
+    }
+
+    var contentType: UTType {
+        self == .markdown ? .plainText : .json
+    }
 }
 
 struct CleanupCompletion {
@@ -393,6 +410,8 @@ private struct SecondWindApplicationView: View {
                 }
                 Section("INSIGHTS") {
                     sidebarItem(.snapshots)
+                    sidebarItem(.inventoryInspector)
+                    sidebarItem(.architecture)
                     sidebarItem(.developerStorage)
                     sidebarItem(.monitor)
                     sidebarItem(.activity)
@@ -409,6 +428,8 @@ private struct SecondWindApplicationView: View {
             switch navigation.section ?? .dashboard {
             case .dashboard: DashboardScreen(model: model) { navigation.section = .cleanup }
             case .snapshots: StorageIntelligenceView(model: model)
+            case .inventoryInspector: InventoryInspectorScreen(model: model)
+            case .architecture: ArchitectureExplorerScreen()
             case .developerStorage: DeveloperStorageScreen(model: model)
             case .monitor: SystemMonitorScreen(model: model)
             case .cleanup: CleanupScreen(model: model)

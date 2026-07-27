@@ -18,7 +18,17 @@ public struct ApplicationStorageProvider: StorageInventoryProvider {
         let applications = discoverApplications(request.home)
         if await cancellationRequested() || Task.isCancelled { throw OperationFailure.cancelled }
         let applicationObservations = applications.map { application in
-            StorageObservation(identity: .init(volumeID: "local", resolvedPath: application.url.path), title: application.displayName, category: .applications, byteSize: fileSystem.fileSize(at: application.url), origin: "Application inventory", explanation: "Application bundle observed locally. Use Applications to inspect its exact support paths before creating a removal plan.", risk: .protected)
+            StorageObservation(
+                identity: .init(volumeID: "local", resolvedPath: application.url.path),
+                title: application.displayName,
+                category: .applications,
+                byteSize: fileSystem.fileSize(at: application.url),
+                origin: "Application inventory",
+                explanation: "Application bundle observed locally. Use Applications to inspect its exact support paths before creating a removal plan.",
+                risk: .protected,
+                provider: name,
+                discoveryConfidence: .high
+            )
         }
         let storageDiscovery = ApplicationStorageDiscovery(home: request.home)
         let supportObservations = storageDiscovery.inventoryEntries(for: applications).map(storageObservation)
@@ -42,7 +52,11 @@ public struct ApplicationStorageProvider: StorageInventoryProvider {
             risk: entry.risk,
             supportedAction: entry.isActionable ? .cleanup : .none,
             modifiedAt: entry.modifiedAt,
-            applicationAssociations: entry.applicationAssociations
+            applicationAssociations: entry.applicationAssociations,
+            ruleID: entry.ruleID,
+            ruleVersion: entry.ruleVersion,
+            provider: name,
+            discoveryConfidence: entry.discoveryConfidence
         )
     }
 }

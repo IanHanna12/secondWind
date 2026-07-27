@@ -301,6 +301,7 @@ private struct ApplicationStorageDetail: View {
                     VStack(alignment: .leading, spacing: 18) {
                         ApplicationProfileHeader(profile: profile)
                         ApplicationMetadataCard(identity: profile.identity)
+                        ApplicationRelationshipExplorer(profile: profile)
                         if let change {
                             ApplicationChangeCard(change: change)
                         }
@@ -334,6 +335,32 @@ private struct ApplicationStorageDetail: View {
                 }
             } else {
                 ContentUnavailableView("Select an application", systemImage: "app.dashed", description: Text("Choose an application to see its known storage footprint."))
+            }
+        }
+    }
+}
+
+private struct ApplicationRelationshipExplorer: View {
+    let profile: ApplicationProfile
+
+    var body: some View {
+        SoftCard {
+            VStack(alignment: .leading, spacing: 9) {
+                Label("Relationship explorer", systemImage: "point.3.connected.trianglepath.dotted")
+                    .font(.headline)
+                Text("These links are derived from the current Storage Inventory. They explain relationships; they never change cleanup eligibility.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                ForEach(profile.relationships) { relationship in
+                    HStack(spacing: 8) {
+                        Text(profile.identity.displayName).lineLimit(1)
+                        Image(systemName: "arrow.right").foregroundStyle(.secondary)
+                        Text(relationship.title).fontWeight(.semibold)
+                        Spacer()
+                        Text(bytes(profile.bytes(for: relationship))).monospacedDigit()
+                    }
+                    .font(.caption)
+                }
             }
         }
     }

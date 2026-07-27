@@ -33,10 +33,16 @@ public struct StorageSnapshotEntry: Codable, Hashable, Identifiable, Sendable {
     public let countsTowardCategoryTotal: Bool
     public let modifiedAt: Date?
     public let applicationAssociations: [ApplicationAssociation]
+    public let identity: StorageIdentity?
+    public let ruleID: String?
+    public let ruleVersion: Int?
+    public let provider: String
+    public let discoveryConfidence: StorageDiscoveryConfidence
+    public let supportedAction: SupportedAction
 
     public var id: String { key }
 
-    public init(key: String, title: String, path: String? = nil, category: String, byteSize: Int64, origin: String? = nil, risk: Risk, explanation: String, isActionable: Bool, countsTowardCategoryTotal: Bool = true, modifiedAt: Date? = nil, applicationAssociations: [ApplicationAssociation] = []) {
+    public init(key: String, title: String, path: String? = nil, category: String, byteSize: Int64, origin: String? = nil, risk: Risk, explanation: String, isActionable: Bool, countsTowardCategoryTotal: Bool = true, modifiedAt: Date? = nil, applicationAssociations: [ApplicationAssociation] = [], identity: StorageIdentity? = nil, ruleID: String? = nil, ruleVersion: Int? = nil, provider: String = "Unknown provider", discoveryConfidence: StorageDiscoveryConfidence = .medium, supportedAction: SupportedAction? = nil) {
         self.key = key
         self.title = title
         self.path = path
@@ -49,9 +55,15 @@ public struct StorageSnapshotEntry: Codable, Hashable, Identifiable, Sendable {
         self.countsTowardCategoryTotal = countsTowardCategoryTotal
         self.modifiedAt = modifiedAt
         self.applicationAssociations = applicationAssociations
+        self.identity = identity ?? path.map { StorageIdentity(volumeID: "local", resolvedPath: $0) }
+        self.ruleID = ruleID
+        self.ruleVersion = ruleVersion
+        self.provider = provider
+        self.discoveryConfidence = discoveryConfidence
+        self.supportedAction = supportedAction ?? (isActionable ? .cleanup : .none)
     }
 
-    private enum CodingKeys: String, CodingKey { case key, title, path, category, byteSize, origin, risk, explanation, isActionable, countsTowardCategoryTotal, modifiedAt, applicationAssociations }
+    private enum CodingKeys: String, CodingKey { case key, title, path, category, byteSize, origin, risk, explanation, isActionable, countsTowardCategoryTotal, modifiedAt, applicationAssociations, identity, ruleID, ruleVersion, provider, discoveryConfidence, supportedAction }
 
     public init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
@@ -67,6 +79,13 @@ public struct StorageSnapshotEntry: Codable, Hashable, Identifiable, Sendable {
         countsTowardCategoryTotal = try container.decodeIfPresent(Bool.self, forKey: .countsTowardCategoryTotal) ?? true
         modifiedAt = try container.decodeIfPresent(Date.self, forKey: .modifiedAt)
         applicationAssociations = try container.decodeIfPresent([ApplicationAssociation].self, forKey: .applicationAssociations) ?? []
+        identity = try container.decodeIfPresent(StorageIdentity.self, forKey: .identity)
+            ?? path.map { StorageIdentity(volumeID: "local", resolvedPath: $0) }
+        ruleID = try container.decodeIfPresent(String.self, forKey: .ruleID)
+        ruleVersion = try container.decodeIfPresent(Int.self, forKey: .ruleVersion)
+        provider = try container.decodeIfPresent(String.self, forKey: .provider) ?? "Unknown provider"
+        discoveryConfidence = try container.decodeIfPresent(StorageDiscoveryConfidence.self, forKey: .discoveryConfidence) ?? .medium
+        supportedAction = try container.decodeIfPresent(SupportedAction.self, forKey: .supportedAction) ?? (isActionable ? .cleanup : .none)
     }
 }
 
@@ -87,10 +106,15 @@ public struct StorageChange: Codable, Hashable, Identifiable, Sendable {
     public let risk: Risk
     public let explanation: String
     public let isActionable: Bool
+    public let origin: String?
+    public let provider: String
+    public let ruleID: String?
+    public let ruleVersion: Int?
+    public let applicationAssociations: [ApplicationAssociation]
 
     public var id: String { key }
 
-    public init(key: String, title: String, category: String, kind: StorageChangeKind, byteChange: Int64, currentBytes: Int64, risk: Risk, explanation: String, isActionable: Bool) {
+    public init(key: String, title: String, category: String, kind: StorageChangeKind, byteChange: Int64, currentBytes: Int64, risk: Risk, explanation: String, isActionable: Bool, origin: String? = nil, provider: String = "Unknown provider", ruleID: String? = nil, ruleVersion: Int? = nil, applicationAssociations: [ApplicationAssociation] = []) {
         self.key = key
         self.title = title
         self.category = category
@@ -100,6 +124,11 @@ public struct StorageChange: Codable, Hashable, Identifiable, Sendable {
         self.risk = risk
         self.explanation = explanation
         self.isActionable = isActionable
+        self.origin = origin
+        self.provider = provider
+        self.ruleID = ruleID
+        self.ruleVersion = ruleVersion
+        self.applicationAssociations = applicationAssociations
     }
 }
 

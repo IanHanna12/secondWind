@@ -85,6 +85,12 @@ public struct StorageInventoryEntry: Hashable, Identifiable, Sendable {
     public let countsTowardCategoryTotal: Bool
     public let modifiedAt: Date?
     public let applicationAssociations: [ApplicationAssociation]
+    public let identity: StorageIdentity?
+    public let ruleID: String?
+    public let ruleVersion: Int?
+    public let provider: String
+    public let discoveryConfidence: StorageDiscoveryConfidence
+    public let supportedAction: SupportedAction
 
     public var id: String { key }
 
@@ -101,6 +107,12 @@ public struct StorageInventoryEntry: Hashable, Identifiable, Sendable {
         self.countsTowardCategoryTotal = countsTowardCategoryTotal
         self.modifiedAt = modifiedAt
         self.applicationAssociations = applicationAssociations
+        identity = .init(volumeID: "local", resolvedPath: finding.path)
+        ruleID = finding.ruleID
+        ruleVersion = finding.ruleVersion
+        provider = finding.origin
+        discoveryConfidence = finding.confidence == .exact ? .high : .medium
+        supportedAction = finding.supportedAction
     }
 
     public init(_ recoveryItem: RecoveryItem) {
@@ -116,9 +128,15 @@ public struct StorageInventoryEntry: Hashable, Identifiable, Sendable {
         countsTowardCategoryTotal = true
         modifiedAt = nil
         applicationAssociations = []
+        identity = .init(volumeID: "local", resolvedPath: recoveryItem.recoveryPath)
+        ruleID = recoveryItem.context.ruleID
+        ruleVersion = recoveryItem.context.ruleVersion.flatMap(Int.init)
+        provider = "Recovery provider"
+        discoveryConfidence = .high
+        supportedAction = .none
     }
 
-    public init(key: String, title: String, path: String?, category: StorageCategory, byteSize: Int64, origin: String, explanation: String, risk: Risk, isActionable: Bool, countsTowardCategoryTotal: Bool = true, modifiedAt: Date? = nil, applicationAssociations: [ApplicationAssociation] = []) {
+    public init(key: String, title: String, path: String?, category: StorageCategory, byteSize: Int64, origin: String, explanation: String, risk: Risk, isActionable: Bool, countsTowardCategoryTotal: Bool = true, modifiedAt: Date? = nil, applicationAssociations: [ApplicationAssociation] = [], identity: StorageIdentity? = nil, ruleID: String? = nil, ruleVersion: Int? = nil, provider: String = "Unknown provider", discoveryConfidence: StorageDiscoveryConfidence = .medium, supportedAction: SupportedAction? = nil) {
         self.key = key
         self.title = title
         self.path = path
@@ -131,6 +149,12 @@ public struct StorageInventoryEntry: Hashable, Identifiable, Sendable {
         self.countsTowardCategoryTotal = countsTowardCategoryTotal
         self.modifiedAt = modifiedAt
         self.applicationAssociations = applicationAssociations
+        self.identity = identity ?? path.map { StorageIdentity(volumeID: "local", resolvedPath: $0) }
+        self.ruleID = ruleID
+        self.ruleVersion = ruleVersion
+        self.provider = provider
+        self.discoveryConfidence = discoveryConfidence
+        self.supportedAction = supportedAction ?? (isActionable ? .cleanup : .none)
     }
 
     public init(_ observation: StorageObservation, countsTowardCategoryTotal: Bool = true) {
@@ -146,6 +170,12 @@ public struct StorageInventoryEntry: Hashable, Identifiable, Sendable {
         self.countsTowardCategoryTotal = countsTowardCategoryTotal
         modifiedAt = observation.modifiedAt
         applicationAssociations = observation.applicationAssociations
+        identity = observation.identity
+        ruleID = observation.ruleID
+        ruleVersion = observation.ruleVersion
+        provider = observation.provider
+        discoveryConfidence = observation.discoveryConfidence
+        supportedAction = observation.supportedAction
     }
 
     /// Returns this immutable entry with its resolved application metadata.
@@ -162,7 +192,13 @@ public struct StorageInventoryEntry: Hashable, Identifiable, Sendable {
             isActionable: isActionable,
             countsTowardCategoryTotal: countsTowardCategoryTotal,
             modifiedAt: modifiedAt,
-            applicationAssociations: associations
+            applicationAssociations: associations,
+            identity: identity,
+            ruleID: ruleID,
+            ruleVersion: ruleVersion,
+            provider: provider,
+            discoveryConfidence: discoveryConfidence,
+            supportedAction: supportedAction
         )
     }
 }

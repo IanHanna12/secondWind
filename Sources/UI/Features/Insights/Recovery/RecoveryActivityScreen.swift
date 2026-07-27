@@ -31,6 +31,8 @@ struct RecoveryActivityScreen: View {
                 Menu("Export") {
                     Button("JSON") { model.exportAudit(.json) }
                     Button("Markdown") { model.exportAudit(.markdown) }
+                    Divider()
+                    Button("Diagnostics with full paths…") { model.exportAudit(.diagnostics) }
                 }
                 Button("Check integrity") { model.checkRecoveryIntegrity() }
                 Button("Refresh") { model.refreshActivity() }

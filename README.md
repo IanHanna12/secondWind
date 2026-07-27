@@ -7,7 +7,7 @@ candidates and making deliberate storage changes. It is independently
 implemented and has no telemetry, analytics, cloud sync, remote rule downloads,
 or update checks.
 
-> **0.7.0 Preview** — Second Wind is an early, locally distributed preview.
+> **0.8.0 Preview** — Second Wind is an early, locally distributed preview.
 > Its core cleanup, audit, Recovery, and storage-change flows are implemented,
 > but interfaces, rules, and stored formats may still change incompatibly.
 > Preview downloads are not notarized and macOS may require an explicit
@@ -17,9 +17,9 @@ Second Wind is intentionally conservative. It only acts on locations it
 explicitly understands. Unknown or ambiguous data is left untouched rather
 than guessed at.
 
-> **Latest update · 24 July 2026** Scanning now has one provider-based path
-> from filesystem facts to the visible inventory. Recovery supports integrity
-> checks and explicit multi-item restore or permanent-deletion outcomes.
+> **Latest update · 27 July 2026** Storage, rules, relationships, snapshots,
+> recommendations and cleanup now explain the local facts behind every visible
+> decision. Inspect the shared Inventory without creating another history.
 > Read the [update history](UPDATES.md).
 
 Read the project's [philosophy](PHILOSOPHY.md) for the principles behind those

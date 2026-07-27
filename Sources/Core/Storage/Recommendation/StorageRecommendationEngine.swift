@@ -7,6 +7,7 @@ public struct StorageRecommendation: Identifiable, Sendable {
     public let entry: StorageInventoryEntry
     public let title: String
     public let detail: String
+    public let reasons: [String]
 
     public var id: String { entry.key }
 }
@@ -24,7 +25,13 @@ public struct StorageRecommendationEngine: Sendable {
                 return StorageRecommendation(
                     entry: entry,
                     title: "Large developer storage",
-                    detail: "\(formattedBytes(entry.byteSize)) is known developer storage. \(entry.explanation) Review it before creating a cleanup plan."
+                    detail: "\(formattedBytes(entry.byteSize)) is known developer storage. \(entry.explanation) Review it before creating a cleanup plan.",
+                    reasons: [
+                        "Located in the Developer Storage category.",
+                        "Uses \(formattedBytes(entry.byteSize)) of known storage.",
+                        entry.explanation,
+                        "Supports \(actionDescription(entry.supportedAction))."
+                    ]
                 )
             }
             if (entry.category == .downloads || entry.category == .documents),
@@ -34,14 +41,25 @@ public struct StorageRecommendationEngine: Sendable {
                 return StorageRecommendation(
                     entry: entry,
                     title: "Older large file",
-                    detail: "\(formattedBytes(entry.byteSize)) was last modified \(days) days ago. Its content is not assumed disposable; review it deliberately."
+                    detail: "\(formattedBytes(entry.byteSize)) was last modified \(days) days ago. Its content is not assumed disposable; review it deliberately.",
+                    reasons: [
+                        "Uses \(formattedBytes(entry.byteSize)) of known storage.",
+                        "Last modified \(days) days ago.",
+                        "Matches an explicit cleanup rule; it is never selected automatically."
+                    ]
                 )
             }
-            return StorageRecommendation(
-                entry: entry,
-                title: "Large reviewed cleanup candidate",
-                detail: "\(formattedBytes(entry.byteSize)) is explicitly covered by \(entry.origin). \(entry.explanation)"
-            )
+                return StorageRecommendation(
+                    entry: entry,
+                    title: "Large reviewed cleanup candidate",
+                    detail: "\(formattedBytes(entry.byteSize)) is explicitly covered by \(entry.origin). \(entry.explanation)",
+                    reasons: [
+                        "Uses \(formattedBytes(entry.byteSize)) of known storage.",
+                        "Observed by \(entry.provider).",
+                        entry.ruleID.map { "Matches rule \($0)\(entry.ruleVersion.map { " v\($0)" } ?? "")." } ?? "Has no cleanup rule.",
+                        entry.explanation
+                    ]
+                )
         }
         .sorted { $0.entry.byteSize > $1.entry.byteSize }
         .prefix(5)
@@ -50,5 +68,13 @@ public struct StorageRecommendationEngine: Sendable {
 
     private func formattedBytes(_ value: Int64) -> String {
         ByteCountFormatter.string(fromByteCount: value, countStyle: .file)
+    }
+
+    private func actionDescription(_ action: SupportedAction) -> String {
+        switch action {
+        case .none: return "no cleanup action"
+        case .cleanup: return "Recovery or Finder Trash after review"
+        case .uninstall: return "the reviewed application-removal workflow"
+        }
     }
 }

@@ -11,13 +11,13 @@ flowchart TB
 
     Scan["<b>2 · Read-only scan workflow</b><br/>LocalStorageScanService<br/>LocalScanRunner<br/>Storage inventory providers + capture<br/>Application association resolver"]
 
-    Facts["<b>3 · Shared domain facts</b><br/>Findings: reason, size, risk, action<br/>StorageInventory: known entries only<br/>ApplicationInventory: read-only grouping"]
+    Facts["<b>3 · Shared domain facts</b><br/>Findings: reason, size, risk, action<br/>StorageInventory: identity, provider, rule, confidence<br/>ApplicationInventory: read-only grouping"]
 
     History["<b>4 · Local durable history</b><br/>Audit records<br/>Recovery items and payloads<br/>Snapshots and snapshot report"]
 
-    ReadModels["<b>5 · Derived explanations</b><br/>Cleanup review: regeneration + Recovery<br/>Storage delta: largest growth + free space<br/>Scan history: each snapshot vs predecessor<br/>Recovery timeline: cleanup and Recovery by day"]
+    ReadModels["<b>5 · Derived explanations</b><br/>Inventory inspector: facts, protection, journey<br/>Cleanup review and recommendations: explicit reasons<br/>Storage delta and history: snapshot causes<br/>Recovery timeline: cleanup and Recovery by day"]
 
-    Screens["<b>6 · Native macOS screens</b><br/>Clean Up · Storage overview · Applications<br/>Recovery and activity · System tasks"]
+    Screens["<b>6 · Native macOS screens</b><br/>Clean Up · Storage overview · Inventory inspector<br/>Applications · Rules · Architecture · Recovery"]
 
     Plan["<b>7 · Reviewed CleanupPlan</b><br/>Dry run → warnings → explicit confirmation<br/>Protected or unsupported items are blocked"]
 

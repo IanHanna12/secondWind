@@ -15,7 +15,20 @@ public struct RuleFindingsStorageProvider: StorageInventoryProvider {
         if await cancellationRequested() || Task.isCancelled { throw OperationFailure.cancelled }
         guard case let .completed(findings) = outcome else { throw OperationFailure.cancelled }
         return ScanProviderResult(provider: name, observations: findings.map { finding in
-            StorageObservation(identity: .init(volumeID: "local", resolvedPath: finding.path), title: finding.title, category: .forFindingCategory(finding.category), byteSize: finding.byteSize, origin: finding.origin, explanation: finding.explanation, risk: finding.risk, supportedAction: finding.supportedAction)
+            StorageObservation(
+                identity: .init(volumeID: "local", resolvedPath: finding.path),
+                title: finding.title,
+                category: .forFindingCategory(finding.category),
+                byteSize: finding.byteSize,
+                origin: finding.origin,
+                explanation: finding.explanation,
+                risk: finding.risk,
+                supportedAction: finding.supportedAction,
+                ruleID: finding.ruleID,
+                ruleVersion: finding.ruleVersion,
+                provider: name,
+                discoveryConfidence: finding.confidence == .exact ? .high : .medium
+            )
         }, findings: findings)
     }
 }

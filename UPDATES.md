@@ -6,11 +6,31 @@ linked Git commit.
 
 ## Current public development version
 
-**0.7.0 Preview** — Recover & Undo: scanning now has one provider-based path
-to the visible inventory, while Recovery supports integrity checks, explicit
-conflict decisions, and multi-item actions with visible outcomes. The app is
+**0.8.0 Preview** — Explainability: the existing shared Storage Inventory now
+exposes the provider, rule, confidence, protection and supported-action facts
+behind storage, recommendations, snapshots, cleanup and Recovery. The app is
 distributed locally as a non-notarized preview; interfaces, rules, and stored
 formats may still change incompatibly.
+
+## 27 July 2026
+
+- Inventory entries retain their observed identity, provider, rule reference,
+  discovery confidence and supported action through reconciliation and local
+  snapshots. Older snapshots remain readable with safe defaults.
+- The new Inventory Inspector groups the existing canonical inventory by
+  category, application, rule or cleanup status, then shows the path, facts,
+  protection or cleanup reasons, and storage journey for each entry. Technical
+  provider, origin and confidence facts remain in the entry detail.
+- Rules now expose their approved root, scope, protection behaviour, supported
+  action, confidence and read-only current-inventory preview.
+- Application relationships, snapshot deltas and deterministic
+  recommendations explain the existing facts behind their visible conclusions.
+- Diagnostics export requires an explicit confirmation before producing a
+  full-path JSON report with inventory metadata, Recovery references and
+  activity records.
+- An Architecture view maps the existing local flow from observation providers
+  through inventory, review, Recovery and activity without creating another
+  workflow.
 
 ## 24 July 2026
 

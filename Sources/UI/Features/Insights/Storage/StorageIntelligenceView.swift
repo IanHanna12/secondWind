@@ -50,6 +50,11 @@ private struct StorageRecommendationsSection: View {
                             }
                             Text(recommendation.entry.title + " · " + recommendation.detail)
                                 .font(.caption).foregroundStyle(.secondary)
+                            ForEach(recommendation.reasons, id: \.self) { reason in
+                                Label(reason, systemImage: "checkmark.circle.fill")
+                                    .font(.caption2)
+                                    .foregroundStyle(.secondary)
+                            }
                         }
                         .padding(.vertical, 3)
                     }
@@ -437,6 +442,9 @@ private struct StorageChangeRow: View {
                 Text(changeDetail)
                     .font(.caption).foregroundStyle(.secondary)
                 Text(change.explanation).font(.caption).foregroundStyle(.secondary).lineLimit(2)
+                Text(deltaExplanation)
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
             }
             Spacer()
             Text(changeLabel).font(.subheadline.weight(.semibold)).monospacedDigit().foregroundStyle(tint)
@@ -456,6 +464,21 @@ private struct StorageChangeRow: View {
     private var changeLabel: String {
         let amount = ByteCountFormatter.string(fromByteCount: abs(change.byteChange), countStyle: .file)
         return change.kind == .shrank || change.kind == .noLongerObserved ? "−\(amount)" : "+\(amount)"
+    }
+
+    private var deltaExplanation: String {
+        var reasons = ["Observed by \(change.provider)."]
+        if let origin = change.origin {
+            reasons.append("Origin: \(origin).")
+        }
+        if let ruleID = change.ruleID {
+            let version = change.ruleVersion.map { " v\($0)" } ?? ""
+            reasons.append("Rule: \(ruleID)\(version).")
+        }
+        if let application = change.applicationAssociations.first?.application.displayName {
+            reasons.append("Associated with \(application).")
+        }
+        return reasons.joined(separator: " ")
     }
 }
 

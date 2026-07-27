@@ -365,6 +365,15 @@ extension SecondWindViewModel {
     }
 
     func exportAudit(_ format: AuditExportFormat) {
+        if format == .diagnostics {
+            let warning = NSAlert()
+            warning.messageText = "Export diagnostics with full paths?"
+            warning.informativeText = "This deliberately created file includes full local paths, inventory metadata, Recovery references, and local activity. Keep it private."
+            warning.addButton(withTitle: "Export diagnostics")
+            warning.addButton(withTitle: "Cancel")
+            guard warning.runModal() == .alertFirstButtonReturn else { return }
+        }
+
         let panel = NSSavePanel()
         panel.nameFieldStringValue = format.fileName
         panel.allowedContentTypes = [format.contentType]
@@ -398,8 +407,32 @@ extension SecondWindViewModel {
             return try localStore.audit.exportJSON()
         case .markdown:
             return Data(localStore.audit.exportMarkdown().utf8)
+        case .diagnostics:
+            return try JSONEncoder.secondWind.encode(diagnosticsExport())
         }
     }
+
+    private func diagnosticsExport() -> LocalDiagnosticsExport {
+        LocalDiagnosticsExport(
+            appVersion: Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "Unknown",
+            build: Bundle.main.object(forInfoDictionaryKey: "CFBundleVersion") as? String ?? "Unknown",
+            snapshotID: storageSnapshots.current?.id,
+            inventory: storageSnapshots.current?.entries ?? [],
+            auditRecords: auditRecords,
+            recoveryItems: recoveryItems,
+            providerNames: Array(Set(storageInventory.entries.map(\.provider))).sorted()
+        )
+    }
+}
+
+private struct LocalDiagnosticsExport: Codable {
+    let appVersion: String
+    let build: String
+    let snapshotID: UUID?
+    let inventory: [StorageSnapshotEntry]
+    let auditRecords: [AuditRecord]
+    let recoveryItems: [RecoveryItem]
+    let providerNames: [String]
 }
 
 private struct RecoveryItemSelection: Sendable {

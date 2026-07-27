@@ -12,6 +12,23 @@ public struct StorageIdentity: Hashable, Codable, Sendable {
     }
 }
 
+/// How strongly Second Wind can explain the source of a storage observation.
+/// It is descriptive only; cleanup policy remains governed by risk and action.
+public enum StorageDiscoveryConfidence: String, Codable, CaseIterable, Sendable {
+    case high
+    case medium
+    case low
+
+    public var title: String {
+        switch self {
+        case .high: return "High"
+        case .medium: return "Medium"
+        case .low: return "Low"
+        }
+    }
+
+}
+
 /// A provider's factual observation. It is not yet an inventory entry because
 /// another provider may have observed the same path or one of its descendants.
 public struct StorageObservation: Sendable {
@@ -25,6 +42,10 @@ public struct StorageObservation: Sendable {
     public let supportedAction: SupportedAction
     public let modifiedAt: Date?
     public let applicationAssociations: [ApplicationAssociation]
+    public let ruleID: String?
+    public let ruleVersion: Int?
+    public let provider: String
+    public let discoveryConfidence: StorageDiscoveryConfidence
 
     public init(
         identity: StorageIdentity,
@@ -36,7 +57,11 @@ public struct StorageObservation: Sendable {
         risk: Risk,
         supportedAction: SupportedAction = .none,
         modifiedAt: Date? = nil,
-        applicationAssociations: [ApplicationAssociation] = []
+        applicationAssociations: [ApplicationAssociation] = [],
+        ruleID: String? = nil,
+        ruleVersion: Int? = nil,
+        provider: String = "Unknown provider",
+        discoveryConfidence: StorageDiscoveryConfidence = .medium
     ) {
         self.identity = identity
         self.title = title
@@ -48,6 +73,10 @@ public struct StorageObservation: Sendable {
         self.supportedAction = supportedAction
         self.modifiedAt = modifiedAt
         self.applicationAssociations = applicationAssociations
+        self.ruleID = ruleID
+        self.ruleVersion = ruleVersion
+        self.provider = provider
+        self.discoveryConfidence = discoveryConfidence
     }
 }
 

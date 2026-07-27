@@ -25,7 +25,9 @@
 		8668D572673C2599EFD62C6C /* StorageIntelligenceView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F8BEE60B5532683616190E76 /* StorageIntelligenceView.swift */; };
 		9D2DE66E2156DF4A50BAA378 /* PrivilegedMaintenanceHelper.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9F1E8846F5041B569EEBB508 /* PrivilegedMaintenanceHelper.swift */; };
 		A5059576AB20C08F1CDF461D /* SecondWindViewModel+Features.swift in Sources */ = {isa = PBXBuildFile; fileRef = F4957122E3C1FF7B18C02C56 /* SecondWindViewModel+Features.swift */; };
+		B000B5AE8B72E289986E9C42 /* ArchitectureExplorerScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = D80D59F8C4ED0D3B269697FB /* ArchitectureExplorerScreen.swift */; };
 		B8875A731DA6C3743D955AC3 /* DashboardScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = F70D522EFD85E5C0417E0807 /* DashboardScreen.swift */; };
+		B8BB484A148C3C719589F33C /* InventoryInspectorScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3E760B5E09D398F6DFA28C3E /* InventoryInspectorScreen.swift */; };
 		C9C710825F0884B19495C634 /* SecondWindServices in Frameworks */ = {isa = PBXBuildFile; productRef = 2D1CE3F61F6476BE65F24270 /* SecondWindServices */; };
 		CA19A9731EEE37E6EF12AE26 /* CleanupScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = DE2429354B712E959259B866 /* CleanupScreen.swift */; };
 		CB2AE08F86A1502E26F6AFC9 /* SecondWindPersistence in Frameworks */ = {isa = PBXBuildFile; productRef = E2594A5E7152DBFD8565BB45 /* SecondWindPersistence */; };
@@ -47,6 +49,7 @@
 
 /* Begin PBXFileReference section */
 		05AAEF099B8B5E6E7C4428C4 /* StorageOutcomePreview.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StorageOutcomePreview.swift; sourceTree = "<group>"; };
+		3E760B5E09D398F6DFA28C3E /* InventoryInspectorScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InventoryInspectorScreen.swift; sourceTree = "<group>"; };
 		513018696FD0BFA55B48E874 /* SystemMonitorScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SystemMonitorScreen.swift; sourceTree = "<group>"; };
 		615B22BD3F6E6A09D20EEE77 /* SecondWind.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = SecondWind.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		7100B740F322562C3293D07D /* README.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = README.md; sourceTree = "<group>"; };
@@ -62,6 +65,7 @@
 		A3812AD76F24879F534AAE6A /* VolumeCheckView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VolumeCheckView.swift; sourceTree = "<group>"; };
 		C565F25F92B73B71D68BF370 /* RulesScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RulesScreen.swift; sourceTree = "<group>"; };
 		C57443188D3B7E4FFB0A871D /* ApplicationsScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ApplicationsScreen.swift; sourceTree = "<group>"; };
+		D80D59F8C4ED0D3B269697FB /* ArchitectureExplorerScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ArchitectureExplorerScreen.swift; sourceTree = "<group>"; };
 		DE2429354B712E959259B866 /* CleanupScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CleanupScreen.swift; sourceTree = "<group>"; };
 		F049D4DEAD98146299C21124 /* SecondWindPrivilegedHelper */ = {isa = PBXFileReference; includeInIndex = 0; path = SecondWindPrivilegedHelper; sourceTree = BUILT_PRODUCTS_DIR; };
 		F4957122E3C1FF7B18C02C56 /* SecondWindViewModel+Features.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "SecondWindViewModel+Features.swift"; sourceTree = "<group>"; };
@@ -267,7 +271,9 @@
 		F34F5CF83C56D3331A0485CA /* Storage */ = {
 			isa = PBXGroup;
 			children = (
+				D80D59F8C4ED0D3B269697FB /* ArchitectureExplorerScreen.swift */,
 				7809DF4512FF0C1A3C873B3D /* DeveloperStorageScreen.swift */,
+				3E760B5E09D398F6DFA28C3E /* InventoryInspectorScreen.swift */,
 				F8BEE60B5532683616190E76 /* StorageIntelligenceView.swift */,
 				05AAEF099B8B5E6E7C4428C4 /* StorageOutcomePreview.swift */,
 			);
@@ -421,9 +427,11 @@
 			buildActionMask = 2147483647;
 			files = (
 				19820711627D02307346C2B9 /* ApplicationsScreen.swift in Sources */,
+				B000B5AE8B72E289986E9C42 /* ArchitectureExplorerScreen.swift in Sources */,
 				CA19A9731EEE37E6EF12AE26 /* CleanupScreen.swift in Sources */,
 				B8875A731DA6C3743D955AC3 /* DashboardScreen.swift in Sources */,
 				F7EE7F9C245C549970E8E880 /* DeveloperStorageScreen.swift in Sources */,
+				B8BB484A148C3C719589F33C /* InventoryInspectorScreen.swift in Sources */,
 				D438FE612C4B3E8227E4FB99 /* RecoveryActivityScreen.swift in Sources */,
 				6E1FD49C958E12C4A5CBFBAF /* RulesScreen.swift in Sources */,
 				7345EE74B0922DAA3D496386 /* SecondWindApp.swift in Sources */,
@@ -529,7 +537,7 @@
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				CODE_SIGN_STYLE = Automatic;
 				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = 8;
+				CURRENT_PROJECT_VERSION = 9;
 				DEBUG_INFORMATION_FORMAT = dwarf;
 				ENABLE_HARDENED_RUNTIME = YES;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
@@ -549,7 +557,7 @@
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				MACOSX_DEPLOYMENT_TARGET = 15.0;
-				MARKETING_VERSION = 0.7.0;
+				MARKETING_VERSION = 0.8.0;
 				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
 				MTL_FAST_MATH = YES;
 				ONLY_ACTIVE_ARCH = YES;
@@ -597,7 +605,7 @@
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				CODE_SIGN_STYLE = Automatic;
 				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = 8;
+				CURRENT_PROJECT_VERSION = 9;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				ENABLE_HARDENED_RUNTIME = YES;
 				ENABLE_NS_ASSERTIONS = NO;
@@ -611,7 +619,7 @@
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				MACOSX_DEPLOYMENT_TARGET = 15.0;
-				MARKETING_VERSION = 0.7.0;
+				MARKETING_VERSION = 0.8.0;
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
 				PRODUCT_BUNDLE_IDENTIFIER = org.secondwind.app;
