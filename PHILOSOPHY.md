@@ -38,7 +38,7 @@ paths—and verifies that its caller is the signed Second Wind app.
 
 ## Keep data local and visible
 
-Second Wind has no account, telemetry, analytics, cloud sync, remote rule
+Second Wind has no account, remote telemetry, analytics, cloud sync, remote rule
 downloads, or update checks. Its decisions come from bundled rules, its
 activity is stored locally, and its behavior should be traceable in the code.
 
