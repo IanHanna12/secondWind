@@ -40,7 +40,7 @@ struct ArchitectureExplorerScreen: View {
                 SoftCard {
                     VStack(alignment: .leading, spacing: 6) {
                         Label("What this does not do", systemImage: "eye.slash.fill").font(.headline)
-                        Text("No cloud sync, telemetry, automatic cleanup, opaque scoring, AI-generated recommendations, or second storage inventory is involved.")
+                        Text("No cloud sync, remote telemetry, automatic cleanup, opaque scoring, AI-generated recommendations, or second storage inventory is involved.")
                             .font(.caption)
                             .foregroundStyle(.secondary)
                     }

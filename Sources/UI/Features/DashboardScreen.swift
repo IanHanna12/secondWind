@@ -80,7 +80,7 @@ struct DashboardScreen: View {
                             .foregroundStyle(.green)
                         VStack(alignment: .leading, spacing: 4) {
                             Text("Private by design").font(.headline)
-                            Text("No telemetry, analytics, cloud sync, update checks, or background network activity.")
+                            Text("No remote telemetry, analytics, cloud sync, update checks, or background network activity.")
                                 .foregroundStyle(.secondary)
                         }
                         Spacer()

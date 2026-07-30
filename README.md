@@ -4,7 +4,7 @@
 
 Second Wind is an offline-first macOS 15+ app for reviewing known cleanup
 candidates and making deliberate storage changes. It is independently
-implemented and has no telemetry, analytics, cloud sync, remote rule downloads,
+implemented and has no remote telemetry, analytics, cloud sync, remote rule downloads,
 or update checks.
 
 > **0.9.0 Preview** — Second Wind is an early, locally distributed preview.
