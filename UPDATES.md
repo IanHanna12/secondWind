@@ -6,11 +6,42 @@ linked Git commit.
 
 ## Current public development version
 
-**0.8.0 Preview** — Explainability: the existing shared Storage Inventory now
-exposes the provider, rule, confidence, protection and supported-action facts
-behind storage, recommendations, snapshots, cleanup and Recovery. The app is
-distributed locally as a non-notarized preview; interfaces, rules, and stored
-formats may still change incompatibly.
+**0.9.0 Preview** — Local Observability: an optional, fully standalone
+loopback-only companion can expose aggregated existing local history to
+Prometheus and Grafana. The app remains the operational product and does not
+depend on the companion. This remains a non-notarized preview; interfaces,
+rules, and stored formats may still change incompatibly.
+
+## 30 July 2026
+
+- Added the optional `observability` companion with read-only `/health`,
+  `/metrics`, `/api/v1/summary`, and `/api/v1/delta/latest` endpoints bound to
+  `127.0.0.1`. It does not trigger scans or expose cleanup operations.
+- Prometheus metrics and JSON responses contain aggregate categories, scan,
+  Recovery, and cleanup facts without paths, file names, user names, Recovery
+  references, rule names, or application identities.
+- Included an optional local Prometheus and Grafana setup with a provisioned
+  Second Wind overview dashboard. Application metrics remain disabled by
+  default.
+- The one-command setup installs the native endpoint as a user `LaunchAgent`
+  with health checks and automatic restart. Prometheus consumes only an atomic,
+  redacted metrics snapshot through an internal Docker bridge; it receives no
+  access to Second Wind's local documents.
+- Grafana provisions its Prometheus data source and overview dashboard
+  automatically. Current category bars are visible from the first scrape, and
+  history panels refresh every 15 seconds.
+- Storage measurements now use allocated disk space throughout scanning,
+  Recovery, and observability. Sparse files therefore report the space they
+  occupy rather than their logical maximum size; Recovery integrity continues
+  to verify each manifest's logical payload size.
+- Added the current Grafana dashboard screenshots to the repository and made
+  its scan-snapshot and live-Recovery time bases explicit.
+- Simplified the source tree and introduced a single visible application flow:
+  app entry, runtime composition, workflows, services, persistence, and macOS
+  adapters. Direct Finder Trash cleanup now uses the same operation workflow as
+  reviewed cleanup.
+- Technical `.noindex` suffixes remain in exact stored paths but are omitted
+  from friendly cleanup titles and compact path labels.
 
 ## 27 July 2026
 

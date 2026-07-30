@@ -2,6 +2,7 @@ import Foundation
 import XCTest
 @testable import SecondWindCore
 @testable import SecondWindApplication
+@testable import SecondWindMacOS
 @testable import SecondWindPersistence
 @testable import SecondWindServices
 
@@ -81,6 +82,42 @@ final class StorageScanServiceTests: XCTestCase {
         XCTAssertEqual(finding.risk, .reviewRequired)
         XCTAssertEqual(finding.supportedAction, .cleanup)
         XCTAssertEqual(finding.confidence, .needsUserReview)
+    }
+
+    func testRecoveryProviderReportsAllocatedBytesWithoutChangingManifestIntegritySize() async throws {
+        let root = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        defer { try? FileManager.default.removeItem(at: root) }
+        try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
+
+        let source = root.appendingPathComponent("sparse.raw")
+        XCTAssertTrue(FileManager.default.createFile(atPath: source.path, contents: nil))
+        let handle = try FileHandle(forWritingTo: source)
+        try handle.truncate(atOffset: 1_000_000_000)
+        try handle.close()
+
+        let recoveryStore = RecoveryStore(root: root.appendingPathComponent("Recovery"))
+        let item = try recoveryStore.storeInRecovery(source, planID: UUID())
+        let request = StorageScanRequest(
+            home: root,
+            rules: [],
+            recoveryItems: [item],
+            totalBytes: 2_000_000_000,
+            availableBytes: 1_000_000_000
+        )
+
+        let result = try await RecoveryStorageProvider().observe(
+            request: request,
+            cancellationRequested: { false }
+        )
+        let observation = try XCTUnwrap(result.observations.first)
+
+        XCTAssertEqual(item.byteSize, 1_000_000_000)
+        XCTAssertEqual(
+            observation.byteSize,
+            LocalFileSystem().allocatedSize(at: URL(fileURLWithPath: item.recoveryPath))
+        )
+        XCTAssertLessThan(observation.byteSize, item.byteSize)
+        XCTAssertTrue(recoveryStore.integrityReport(for: item).canRestore)
     }
 
     private func scanProviders(

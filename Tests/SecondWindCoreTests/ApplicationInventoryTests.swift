@@ -19,14 +19,19 @@ final class ApplicationInventoryTests: XCTestCase {
         let app = InstalledApplication(url: appURL, bundleIdentifier: "com.example.app", displayName: "Example")
         let inventory = InstalledApplicationInventory(home: home)
         let preview = inventory.removalPreview(for: app)
+        let fileSystem = LocalFileSystem()
+        let applicationBytes = fileSystem.allocatedSize(at: appURL)
+        let exactSupportBytes = fileSystem.allocatedSize(at: exactSupport.deletingLastPathComponent())
+        let protectedSupportBytes = fileSystem.allocatedSize(at: nameBasedSupport.deletingLastPathComponent())
 
-        XCTAssertEqual(preview.applicationBytes, 12)
+        XCTAssertEqual(preview.applicationBytes, applicationBytes)
         XCTAssertEqual(preview.exactRemnants.count, 1)
-        XCTAssertEqual(preview.exactRemnantBytes, 8)
+        XCTAssertEqual(preview.exactRemnantBytes, exactSupportBytes)
         XCTAssertEqual(preview.exactRemnants.first?.kind, .applicationSupport)
         XCTAssertEqual(preview.protectedRemnants.count, 1)
+        XCTAssertEqual(preview.protectedRemnants.first?.byteSize, protectedSupportBytes)
         XCTAssertEqual(preview.protectedRemnants.first?.kind, .nameMatch)
-        XCTAssertEqual(preview.removableBytes, 20)
+        XCTAssertEqual(preview.removableBytes, applicationBytes + exactSupportBytes)
 
         let findings = inventory.uninstallFindings(for: app)
         XCTAssertEqual(findings.filter { $0.supportedAction == .uninstall }.count, 2)
@@ -116,6 +121,26 @@ final class ApplicationInventoryTests: XCTestCase {
             applications: []
         )
         XCTAssertEqual(inventory.entries.first?.applicationAssociations.first?.evidence, .possibleOrphan)
+    }
+
+    func testAllocatedSizeDoesNotUseSparseFileLogicalCapacity() throws {
+        let root = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        defer { try? FileManager.default.removeItem(at: root) }
+        try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
+
+        let sparseFile = root.appendingPathComponent("sparse.raw")
+        XCTAssertTrue(FileManager.default.createFile(atPath: sparseFile.path, contents: nil))
+        let handle = try FileHandle(forWritingTo: sparseFile)
+        try handle.truncate(atOffset: 1_000_000_000)
+        try handle.close()
+
+        let logicalSize = try XCTUnwrap(
+            try sparseFile.resourceValues(forKeys: [.fileSizeKey]).fileSize
+        )
+        let allocatedSize = LocalFileSystem().allocatedSize(at: sparseFile)
+
+        XCTAssertEqual(logicalSize, 1_000_000_000)
+        XCTAssertLessThan(allocatedSize, Int64(logicalSize))
     }
 
     private func write(_ data: Data, to url: URL) throws {

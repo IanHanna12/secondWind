@@ -1,0 +1,294 @@
+#!/bin/zsh
+
+set -euo pipefail
+
+readonly SCRIPT_DIRECTORY="${0:A:h}"
+readonly DOCKER_DIRECTORY="${SCRIPT_DIRECTORY:h}/docker"
+readonly RUNTIME_DIRECTORY="${SCRIPT_DIRECTORY}/.runtime"
+readonly BUILD_DIRECTORY="${RUNTIME_DIRECTORY}/build"
+readonly MODULE_CACHE_DIRECTORY="${BUILD_DIRECTORY}/ModuleCache"
+readonly SERVER_LOG_FILE="${RUNTIME_DIRECTORY}/server.log"
+readonly PROMETHEUS_DIRECTORY="${RUNTIME_DIRECTORY}/prometheus"
+readonly PROMETHEUS_FILE="${PROMETHEUS_DIRECTORY}/metrics.prom"
+readonly SERVICE_LABEL="org.secondwind.local-observability"
+readonly SERVICE_TARGET="gui/${UID}/${SERVICE_LABEL}"
+readonly LAUNCH_AGENT_FILE="${HOME}/Library/LaunchAgents/${SERVICE_LABEL}.plist"
+readonly SERVER_HEALTH_URL="http://127.0.0.1:9467/health"
+readonly PROMETHEUS_URL="http://127.0.0.1:9090"
+readonly GRAFANA_URL="http://127.0.0.1:3000"
+
+compose() {
+    docker compose \
+        --project-directory "${DOCKER_DIRECTORY}" \
+        --file "${DOCKER_DIRECTORY}/compose.yml" \
+        "$@"
+}
+
+require_command() {
+    if ! command -v "$1" >/dev/null 2>&1; then
+        echo "Missing required command: $1"
+        exit 1
+    fi
+}
+
+wait_until() {
+    local description="$1"
+    local attempts="$2"
+    shift 2
+
+    echo "Waiting for ${description}..."
+    local attempt
+    for ((attempt = 1; attempt <= attempts; attempt++)); do
+        if "$@" >/dev/null 2>&1; then
+            return 0
+        fi
+        sleep 1
+    done
+
+    echo "${description} did not become ready."
+    return 1
+}
+
+server_is_healthy() {
+    curl --fail --silent "${SERVER_HEALTH_URL}" >/dev/null
+}
+
+prometheus_is_ready() {
+    curl --fail --silent "${PROMETHEUS_URL}/-/ready" >/dev/null
+}
+
+grafana_is_ready() {
+    curl --fail --silent "${GRAFANA_URL}/api/health" >/dev/null
+}
+
+prometheus_scrapes_second_wind() {
+    curl --fail --silent \
+        "${PROMETHEUS_URL}/api/v1/targets" |
+        grep -q '"health":"up"'
+}
+
+prometheus_has_second_wind_data() {
+    curl --fail --silent \
+        "${PROMETHEUS_URL}/api/v1/query?query=secondwind_snapshot_available" |
+        grep -q '"result":\[{'
+}
+
+service_is_loaded() {
+    launchctl print "${SERVICE_TARGET}" >/dev/null 2>&1
+}
+
+service_is_unloaded() {
+    ! service_is_loaded
+}
+
+bootstrap_launch_agent() {
+    local attempt
+    for ((attempt = 1; attempt <= 10; attempt++)); do
+        if launchctl bootstrap "gui/${UID}" "${LAUNCH_AGENT_FILE}"; then
+            return 0
+        fi
+        sleep 1
+    done
+
+    echo "The Second Wind service could not be loaded after 10 attempts."
+    return 1
+}
+
+ensure_docker_is_running() {
+    if docker info >/dev/null 2>&1; then
+        return
+    fi
+
+    if [[ -d "/Applications/Docker.app" ]]; then
+        echo "Starting Docker Desktop..."
+        open -a Docker
+        wait_until "Docker Desktop" 120 docker info
+        return
+    fi
+
+    echo "Docker is installed but its engine is not running."
+    exit 1
+}
+
+escape_xml() {
+    print -r -- "$1" |
+        sed -e 's/&/\&amp;/g' -e 's/</\&lt;/g' -e 's/>/\&gt;/g'
+}
+
+install_launch_agent() {
+    local executable="$1"
+    local escaped_executable
+    local escaped_working_directory
+    local escaped_prometheus_file
+    local escaped_log_file
+
+    escaped_executable="$(escape_xml "${executable}")"
+    escaped_working_directory="$(escape_xml "${SCRIPT_DIRECTORY}")"
+    escaped_prometheus_file="$(escape_xml "${PROMETHEUS_FILE}")"
+    escaped_log_file="$(escape_xml "${SERVER_LOG_FILE}")"
+
+    mkdir -p "${LAUNCH_AGENT_FILE:h}" "${PROMETHEUS_DIRECTORY}"
+    {
+        print '<?xml version="1.0" encoding="UTF-8"?>'
+        print '<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN"'
+        print '  "http://www.apple.com/DTDs/PropertyList-1.0.dtd">'
+        print '<plist version="1.0">'
+        print '<dict>'
+        print '  <key>Label</key>'
+        print "  <string>${SERVICE_LABEL}</string>"
+        print '  <key>ProgramArguments</key>'
+        print '  <array>'
+        print "    <string>${escaped_executable}</string>"
+        print '    <string>--prometheus-file</string>'
+        print "    <string>${escaped_prometheus_file}</string>"
+        print '  </array>'
+        print '  <key>WorkingDirectory</key>'
+        print "  <string>${escaped_working_directory}</string>"
+        print '  <key>RunAtLoad</key>'
+        print '  <true/>'
+        print '  <key>KeepAlive</key>'
+        print '  <true/>'
+        print '  <key>ProcessType</key>'
+        print '  <string>Background</string>'
+        print '  <key>StandardOutPath</key>'
+        print "  <string>${escaped_log_file}</string>"
+        print '  <key>StandardErrorPath</key>'
+        print "  <string>${escaped_log_file}</string>"
+        print '</dict>'
+        print '</plist>'
+    } >"${LAUNCH_AGENT_FILE}"
+
+    plutil -lint "${LAUNCH_AGENT_FILE}" >/dev/null
+}
+
+start_native_server() {
+    if server_is_healthy; then
+        if ! service_is_loaded; then
+            echo "Port 9467 is used by a process outside the Second Wind service."
+            echo "Stop that process, then run this setup again."
+            exit 1
+        fi
+
+        echo "Updating the existing Second Wind service..."
+    fi
+
+    mkdir -p "${RUNTIME_DIRECTORY}"
+    echo "Building the native Second Wind endpoint..."
+    CLANG_MODULE_CACHE_PATH="${MODULE_CACHE_DIRECTORY}" \
+    SWIFTPM_MODULECACHE_OVERRIDE="${MODULE_CACHE_DIRECTORY}" \
+    swift build --disable-sandbox \
+        --package-path "${SCRIPT_DIRECTORY}" \
+        --scratch-path "${BUILD_DIRECTORY}" \
+        --product secondwind-observability
+
+    local binary_directory
+    binary_directory="$(
+        CLANG_MODULE_CACHE_PATH="${MODULE_CACHE_DIRECTORY}" \
+        SWIFTPM_MODULECACHE_OVERRIDE="${MODULE_CACHE_DIRECTORY}" \
+        swift build --disable-sandbox \
+            --package-path "${SCRIPT_DIRECTORY}" \
+            --scratch-path "${BUILD_DIRECTORY}" \
+            --show-bin-path
+    )"
+
+    echo "Installing the native Second Wind service..."
+    if service_is_loaded; then
+        launchctl bootout "${SERVICE_TARGET}"
+        wait_until "the previous Second Wind service to stop" 30 service_is_unloaded
+    fi
+    install_launch_agent "${binary_directory}/secondwind-observability"
+    bootstrap_launch_agent
+    launchctl enable "${SERVICE_TARGET}"
+    launchctl kickstart -k "${SERVICE_TARGET}"
+
+    if ! wait_until "Second Wind endpoint" 90 server_is_healthy; then
+        echo "Native server log: ${SERVER_LOG_FILE}"
+        tail -n 30 "${SERVER_LOG_FILE}" || true
+        exit 1
+    fi
+}
+
+stop_native_server() {
+    if service_is_loaded; then
+        echo "Stopping the native Second Wind service..."
+        launchctl bootout "${SERVICE_TARGET}"
+    else
+        echo "No script-managed Second Wind service is running."
+    fi
+
+    rm -f "${LAUNCH_AGENT_FILE}"
+}
+
+start_all() {
+    require_command curl
+    require_command docker
+    require_command launchctl
+    require_command plutil
+    require_command sed
+    require_command swift
+    require_command open
+
+    ensure_docker_is_running
+    start_native_server
+
+    echo "Starting Prometheus and Grafana..."
+    compose up --detach
+
+    wait_until "Prometheus" 60 prometheus_is_ready
+    wait_until "Grafana" 60 grafana_is_ready
+    wait_until "the first Second Wind metrics scrape" 45 prometheus_scrapes_second_wind
+    wait_until "the first Second Wind data point" 45 prometheus_has_second_wind_data
+
+    echo
+    echo "Local observability is ready:"
+    echo "  Grafana:    ${GRAFANA_URL}  (admin / admin)"
+    echo "  Prometheus: ${PROMETHEUS_URL}"
+    echo "  Metrics:    http://127.0.0.1:9467/metrics"
+    echo
+    echo "Stop everything with:"
+    echo "  ./observability/local-observability stop"
+
+    if [[ "${SECONDWIND_NO_OPEN:-0}" != "1" ]]; then
+        open "${GRAFANA_URL}"
+    fi
+}
+
+stop_all() {
+    require_command docker
+    compose down
+    stop_native_server
+}
+
+show_status() {
+    echo "Second Wind service: $(service_is_loaded && echo "loaded" || echo "stopped")"
+    echo "Second Wind endpoint: $(server_is_healthy && echo "ready" || echo "stopped")"
+    echo "Prometheus: $(prometheus_is_ready && echo "ready" || echo "stopped")"
+    echo "Grafana: $(grafana_is_ready && echo "ready" || echo "stopped")"
+}
+
+show_logs() {
+    echo "Native endpoint log: ${SERVER_LOG_FILE}"
+    if [[ -f "${SERVER_LOG_FILE}" ]]; then
+        tail -n 40 "${SERVER_LOG_FILE}"
+    fi
+    compose logs --tail 40
+}
+
+case "${1:-start}" in
+    start)
+        start_all
+        ;;
+    stop)
+        stop_all
+        ;;
+    status)
+        show_status
+        ;;
+    logs)
+        show_logs
+        ;;
+    *)
+        echo "Usage: $0 [start|stop|status|logs]"
+        exit 1
+        ;;
+esac

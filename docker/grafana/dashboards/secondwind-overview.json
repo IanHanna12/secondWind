@@ -1,0 +1,380 @@
+{
+  "annotations": { "list": [] },
+  "editable": true,
+  "panels": [
+    {
+      "type": "row",
+      "title": "At a glance",
+      "collapsed": false,
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 0 }
+    },
+    {
+      "type": "stat",
+      "title": "Known storage in latest scan",
+      "description": "Storage represented by the latest completed Second Wind scan.",
+      "datasource": { "type": "prometheus", "uid": "secondwind-prometheus" },
+      "targets": [
+        {
+          "expr": "secondwind_storage_bytes",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": { "fixedColor": "blue", "mode": "fixed" },
+          "unit": "decbytes"
+        }
+      },
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "reduceOptions": { "calcs": ["lastNotNull"], "values": false }
+      },
+      "gridPos": { "h": 6, "w": 6, "x": 0, "y": 1 }
+    },
+    {
+      "type": "stat",
+      "title": "Items ready for review",
+      "description": "Items eligible to enter Second Wind's reviewed cleanup workflow.",
+      "datasource": { "type": "prometheus", "uid": "secondwind-prometheus" },
+      "targets": [
+        {
+          "expr": "secondwind_reviewable_items",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": { "fixedColor": "green", "mode": "fixed" },
+          "unit": "none",
+          "decimals": 0
+        }
+      },
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "reduceOptions": { "calcs": ["lastNotNull"], "values": false }
+      },
+      "gridPos": { "h": 6, "w": 6, "x": 6, "y": 1 }
+    },
+    {
+      "type": "stat",
+      "title": "Stored in Recovery now",
+      "description": "Physical storage occupied by the current Recovery contents, refreshed independently from scans.",
+      "datasource": { "type": "prometheus", "uid": "secondwind-prometheus" },
+      "targets": [
+        {
+          "expr": "secondwind_recovery_bytes",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": { "fixedColor": "orange", "mode": "fixed" },
+          "unit": "decbytes"
+        }
+      },
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "reduceOptions": { "calcs": ["lastNotNull"], "values": false }
+      },
+      "gridPos": { "h": 6, "w": 6, "x": 12, "y": 1 }
+    },
+    {
+      "type": "stat",
+      "title": "Observability updated",
+      "description": "When the immutable observability snapshot was last refreshed.",
+      "datasource": { "type": "prometheus", "uid": "secondwind-prometheus" },
+      "targets": [
+        {
+          "expr": "secondwind_snapshot_updated_at_seconds * 1000",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": { "fixedColor": "text", "mode": "fixed" },
+          "unit": "dateTimeAsIso"
+        }
+      },
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "reduceOptions": { "calcs": ["lastNotNull"], "values": false }
+      },
+      "gridPos": { "h": 6, "w": 6, "x": 18, "y": 1 }
+    },
+    {
+      "type": "row",
+      "title": "Where the space is",
+      "collapsed": false,
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 7 }
+    },
+    {
+      "type": "bargauge",
+      "title": "Storage by category in latest scan",
+      "description": "Only user-relevant storage categories from the latest completed scan.",
+      "datasource": { "type": "prometheus", "uid": "secondwind-prometheus" },
+      "targets": [
+        {
+          "expr": "secondwind_category_storage_bytes > 0",
+          "legendFormat": "{{category}}",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "decbytes",
+          "color": { "mode": "fixed", "fixedColor": "blue" }
+        },
+        "overrides": [
+          {
+            "matcher": { "id": "byName", "options": "applications" },
+            "properties": [{ "id": "displayName", "value": "Applications" }]
+          },
+          {
+            "matcher": { "id": "byName", "options": "caches" },
+            "properties": [{ "id": "displayName", "value": "Caches" }]
+          },
+          {
+            "matcher": { "id": "byName", "options": "developer_storage" },
+            "properties": [{ "id": "displayName", "value": "Developer storage" }]
+          },
+          {
+            "matcher": { "id": "byName", "options": "documents" },
+            "properties": [{ "id": "displayName", "value": "Documents" }]
+          },
+          {
+            "matcher": { "id": "byName", "options": "downloads" },
+            "properties": [{ "id": "displayName", "value": "Downloads" }]
+          },
+          {
+            "matcher": { "id": "byName", "options": "logs" },
+            "properties": [{ "id": "displayName", "value": "Logs" }]
+          },
+          {
+            "matcher": { "id": "byName", "options": "recovery_storage" },
+            "properties": [{ "id": "displayName", "value": "Recovery storage" }]
+          }
+        ]
+      },
+      "options": {
+        "displayMode": "gradient",
+        "orientation": "horizontal",
+        "reduceOptions": { "calcs": ["lastNotNull"], "values": false },
+        "showUnfilled": true
+      },
+      "gridPos": { "h": 10, "w": 24, "x": 0, "y": 8 }
+    },
+    {
+      "type": "row",
+      "title": "What changed",
+      "collapsed": false,
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 18 }
+    },
+    {
+      "type": "bargauge",
+      "title": "Changes since the previous snapshot",
+      "description": "Categories without a measured change are omitted.",
+      "datasource": { "type": "prometheus", "uid": "secondwind-prometheus" },
+      "targets": [
+        {
+          "expr": "secondwind_category_change_bytes != 0",
+          "legendFormat": "{{category}}",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "decbytes",
+          "color": { "mode": "thresholds" },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "orange", "value": 0 }
+            ]
+          }
+        },
+        "overrides": [
+          {
+            "matcher": { "id": "byName", "options": "applications" },
+            "properties": [{ "id": "displayName", "value": "Applications" }]
+          },
+          {
+            "matcher": { "id": "byName", "options": "caches" },
+            "properties": [{ "id": "displayName", "value": "Caches" }]
+          },
+          {
+            "matcher": { "id": "byName", "options": "developer_storage" },
+            "properties": [{ "id": "displayName", "value": "Developer storage" }]
+          },
+          {
+            "matcher": { "id": "byName", "options": "documents" },
+            "properties": [{ "id": "displayName", "value": "Documents" }]
+          },
+          {
+            "matcher": { "id": "byName", "options": "downloads" },
+            "properties": [{ "id": "displayName", "value": "Downloads" }]
+          },
+          {
+            "matcher": { "id": "byName", "options": "logs" },
+            "properties": [{ "id": "displayName", "value": "Logs" }]
+          },
+          {
+            "matcher": { "id": "byName", "options": "recovery_storage" },
+            "properties": [{ "id": "displayName", "value": "Recovery storage" }]
+          }
+        ]
+      },
+      "options": {
+        "displayMode": "gradient",
+        "orientation": "horizontal",
+        "reduceOptions": { "calcs": ["lastNotNull"], "values": false },
+        "showUnfilled": true
+      },
+      "gridPos": { "h": 8, "w": 24, "x": 0, "y": 19 }
+    },
+    {
+      "type": "row",
+      "title": "History",
+      "collapsed": false,
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 27 }
+    },
+    {
+      "type": "timeseries",
+      "title": "Known storage over time",
+      "datasource": { "type": "prometheus", "uid": "secondwind-prometheus" },
+      "targets": [
+        {
+          "expr": "secondwind_storage_bytes",
+          "legendFormat": "Known storage",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "drawStyle": "line",
+            "fillOpacity": 12,
+            "lineWidth": 2,
+            "pointSize": 5,
+            "showPoints": "always"
+          },
+          "unit": "decbytes"
+        }
+      },
+      "gridPos": { "h": 9, "w": 12, "x": 0, "y": 28 }
+    },
+    {
+      "type": "timeseries",
+      "title": "Current Recovery storage over time",
+      "datasource": { "type": "prometheus", "uid": "secondwind-prometheus" },
+      "targets": [
+        {
+          "expr": "secondwind_recovery_bytes",
+          "legendFormat": "Recovery storage",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "drawStyle": "line",
+            "fillOpacity": 12,
+            "lineWidth": 2,
+            "pointSize": 5,
+            "showPoints": "always"
+          },
+          "unit": "decbytes"
+        }
+      },
+      "gridPos": { "h": 9, "w": 12, "x": 12, "y": 28 }
+    },
+    {
+      "type": "row",
+      "title": "Recorded activity",
+      "collapsed": false,
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 37 }
+    },
+    {
+      "type": "stat",
+      "title": "Completed scans",
+      "datasource": { "type": "prometheus", "uid": "secondwind-prometheus" },
+      "targets": [
+        {
+          "expr": "secondwind_completed_scans",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": { "defaults": { "unit": "none", "decimals": 0 } },
+      "options": {
+        "colorMode": "none",
+        "graphMode": "none",
+        "reduceOptions": { "calcs": ["lastNotNull"], "values": false }
+      },
+      "gridPos": { "h": 6, "w": 8, "x": 0, "y": 38 }
+    },
+    {
+      "type": "stat",
+      "title": "Completed cleanup actions",
+      "datasource": { "type": "prometheus", "uid": "secondwind-prometheus" },
+      "targets": [
+        {
+          "expr": "secondwind_completed_cleanups",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": { "defaults": { "unit": "none", "decimals": 0 } },
+      "options": {
+        "colorMode": "none",
+        "graphMode": "none",
+        "reduceOptions": { "calcs": ["lastNotNull"], "values": false }
+      },
+      "gridPos": { "h": 6, "w": 8, "x": 8, "y": 38 }
+    },
+    {
+      "type": "stat",
+      "title": "Recovery entries",
+      "datasource": { "type": "prometheus", "uid": "secondwind-prometheus" },
+      "targets": [
+        {
+          "expr": "secondwind_recovery_entries",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": { "defaults": { "unit": "none", "decimals": 0 } },
+      "options": {
+        "colorMode": "none",
+        "graphMode": "none",
+        "reduceOptions": { "calcs": ["lastNotNull"], "values": false }
+      },
+      "gridPos": { "h": 6, "w": 8, "x": 16, "y": 38 }
+    },
+    {
+      "type": "row",
+      "title": "Metric guide (technical reference)",
+      "collapsed": true,
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 44 },
+      "panels": [
+        {
+          "type": "text",
+          "title": "How to read Second Wind metrics",
+          "options": {
+            "mode": "markdown",
+            "content": "### Units\n\n- **B, MB, GB**: decimal storage units used by the curated dashboard.\n- **c**: count, meaning a number of entries or recorded actions.\n- **c/s**: counts per second, a rate calculated by Metrics Drilldown. It is useful for event rates, but not for current-state gauges such as Recovery entries.\n- **seconds**: duration or Unix timestamp, depending on the metric name.\n\n### Storage\n\n| Metric | Meaning |\n| --- | --- |\n| `secondwind_storage_bytes` | Storage understood by the latest completed scan. |\n| `secondwind_storage_items` | Number of understood storage items. |\n| `secondwind_reviewable_items` | Items ready for reviewed cleanup. |\n| `secondwind_protected_items` | Items protected from cleanup. |\n| `secondwind_category_storage_bytes` | Storage grouped by its fixed category label. |\n| `secondwind_category_items` | Item count grouped by category. |\n| `secondwind_category_change_bytes` | Change since the previous snapshot, grouped by category. |\n\n### Recovery and cleanup\n\n| Metric | Meaning |\n| --- | --- |\n| `secondwind_recovery_bytes` | Storage currently held in Recovery. |\n| `secondwind_recovery_entries` | Independent Recovery entries. A stored directory and all of its contents count as one entry. |\n| `secondwind_recovery_oldest_item_age_seconds` | Age of the oldest Recovery entry. |\n| `secondwind_completed_cleanups` | Completed cleanup actions in local activity. |\n| `secondwind_cleaned_bytes` | Storage moved by completed cleanup actions. |\n| `secondwind_trashed_bytes` | Storage moved to Finder Trash. |\n| `secondwind_recovery_moved_bytes` | Storage moved into Recovery. |\n\n### Activity and service state\n\n| Metric | Meaning |\n| --- | --- |\n| `secondwind_completed_scans` | Completed scans recorded locally. |\n| `secondwind_recorded_failures` | Failures recorded in local activity. |\n| `secondwind_recorded_cancellations` | Cancellations recorded in local activity. |\n| `secondwind_snapshot_available` | `1` when a completed local snapshot is available, otherwise `0`. |\n| `secondwind_snapshot_updated_at_seconds` | Unix timestamp of the latest observability refresh. |\n\nApplication metrics appear only when explicitly enabled. They remain aggregated and never expose application names or identifiers."
+          },
+          "gridPos": { "h": 22, "w": 24, "x": 0, "y": 45 }
+        }
+      ]
+    }
+  ],
+  "schemaVersion": 41,
+  "tags": ["secondwind", "local-only"],
+  "templating": { "list": [] },
+  "refresh": "15s",
+  "time": { "from": "now-1h", "to": "now" },
+  "title": "Second Wind — Local Storage Overview",
+  "version": 9
+}

@@ -10,7 +10,7 @@ func check(_ value: @autoclosure () -> Bool, _ message: String) throws { if !val
 struct FixtureFileSystem: FileSystem {
     let paths: [URL: Int64]
     func exists(_ url: URL) -> Bool { paths[url] != nil }
-    func fileSize(at url: URL) -> Int64 { paths[url] ?? 0 }
+    func allocatedSize(at url: URL) -> Int64 { paths[url] ?? 0 }
     func directChildren(in root: URL) -> [URL] { [] }
     func regularFiles(in root: URL, maximumDepth: Int) -> [URL] { [] }
 }

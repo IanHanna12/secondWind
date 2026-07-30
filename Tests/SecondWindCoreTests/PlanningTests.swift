@@ -90,7 +90,7 @@ final class PlanningTests: XCTestCase {
         }
     }
 
-    func testPartialFailureReportsCompletedAndFailedPathsInAudit() async throws {
+    func testPartialFailureRecordsAnOutcomeForEveryActionAndAuditsIt() async throws {
         let root = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
         defer { try? FileManager.default.removeItem(at: root) }
 
@@ -115,17 +115,11 @@ final class PlanningTests: XCTestCase {
             auditStore: audit
         )
 
-        do {
-            _ = try await executor.execute(plan)
-            XCTFail("Expected a partial-execution error")
-        } catch {
-            guard case let PlanExecutionError.actionFailed(completed, failed, _) = error else {
-                XCTFail("Expected a partial-execution error, got \(error)")
-                return
-            }
-            XCTAssertEqual(completed, [first.path])
-            XCTAssertEqual(failed, second.path)
-        }
+        let outcome = try await executor.executeWithOutcome(plan)
+        XCTAssertEqual(outcome.movedBytes, findings[0].byteSize)
+        XCTAssertEqual(outcome.results.map(\.action.sourcePath), [first.path, second.path])
+        XCTAssertEqual(outcome.results[0].outcome, .completedNotYetObservable)
+        XCTAssertEqual(outcome.results[1].outcome, .failed(reason: CocoaError(.fileWriteUnknown).localizedDescription))
 
         let failure = try XCTUnwrap(audit.records().first { $0.kind == .failure })
         XCTAssertEqual(failure.paths, [first.path, second.path])

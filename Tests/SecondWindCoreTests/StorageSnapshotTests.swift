@@ -58,7 +58,7 @@ final class StorageSnapshotTests: XCTestCase {
 
         let inventory = StorageInventory(entries: [
             StorageInventoryEntry(finding),
-            StorageInventoryEntry(recovery)
+            StorageInventoryEntry(recovery, allocatedByteSize: recovery.byteSize)
         ])
 
         XCTAssertEqual(inventory.entries.count, 2)

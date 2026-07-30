@@ -7,7 +7,7 @@ candidates and making deliberate storage changes. It is independently
 implemented and has no telemetry, analytics, cloud sync, remote rule downloads,
 or update checks.
 
-> **0.8.0 Preview** — Second Wind is an early, locally distributed preview.
+> **0.9.0 Preview** — Second Wind is an early, locally distributed preview.
 > Its core cleanup, audit, Recovery, and storage-change flows are implemented,
 > but interfaces, rules, and stored formats may still change incompatibly.
 > Preview downloads are not notarized and macOS may require an explicit
@@ -17,9 +17,9 @@ Second Wind is intentionally conservative. It only acts on locations it
 explicitly understands. Unknown or ambiguous data is left untouched rather
 than guessed at.
 
-> **Latest update · 27 July 2026** Storage, rules, relationships, snapshots,
-> recommendations and cleanup now explain the local facts behind every visible
-> decision. Inspect the shared Inventory without creating another history.
+> **Latest update · 30 July 2026** The source flow is now easier to follow, and
+> an optional standalone, loopback-only observability companion can expose
+> aggregate local history to Prometheus and Grafana without changing the app.
 > Read the [update history](UPDATES.md).
 
 Read the project's [philosophy](PHILOSOPHY.md) for the principles behind those
@@ -39,6 +39,18 @@ choices.
 
 <p>
   <img src="Docs/Screenshots/system-monitor.png" alt="Local system monitor" width="49%">
+</p>
+
+### Local observability
+
+<p>
+  <img src="Docs/Screenshots/grafana-overview.png" alt="Grafana overview of Second Wind's local storage observations" width="49%">
+  <img src="Docs/Screenshots/grafana-category-changes.png" alt="Grafana category changes since the previous snapshot" width="49%">
+</p>
+
+<p>
+  <img src="Docs/Screenshots/grafana-history.png" alt="Grafana history of known and Recovery storage" width="49%">
+  <img src="Docs/Screenshots/grafana-recovery-cleanup-metrics.png" alt="Grafana metric guide for Recovery and cleanup" width="49%">
 </p>
 
 ## License
@@ -122,6 +134,22 @@ To test it locally, open `Xcode/SecondWind.xcworkspace`, select the same
 signing team for both targets, build the **App** scheme, then enable the helper
 from System tasks. See the [helper notes](Sources/PrivilegedHelperService/README.md)
 for its boundary and local test path.
+
+## Optional local observability
+
+The [observability](observability/README.md) directory contains a completely
+standalone local companion for Prometheus and Grafana. It reads only existing
+local snapshots, Recovery manifests, and activity records, then serves an
+immutable aggregate view on `127.0.0.1`.
+
+The included dashboard separates scan-snapshot storage from live Recovery
+storage and reports allocated disk usage, so sparse files are not represented
+by their potentially much larger logical capacity.
+
+It is disabled unless started deliberately, exposes no mutation endpoints, and
+never exports paths, file names, user names, Recovery references, arbitrary
+rule names, or application identities. The Second Wind app does not depend on
+it and behaves identically when it is absent or stopped.
 
 ## Development
 

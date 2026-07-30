@@ -1,38 +1,62 @@
 import AppKit
-import Combine
 import Observation
 import SwiftUI
 import UniformTypeIdentifiers
-import SecondWindCore
-import SecondWindApplication
-import SecondWindMacOS
-import SecondWindPersistence
-import SecondWindServices
 
-@main
+@main @MainActor
 struct SecondWindMain {
     private static var window: NSWindow?
 
     static func main() {
-        let app = NSApplication.shared
-        app.setActivationPolicy(.regular)
+        let application = NSApplication.shared
+        application.setActivationPolicy(.regular)
+
+        let runtime = SecondWindRuntime.local()
+        let rootView = SecondWindApplicationView(runtime: runtime)
+        let hostingView = NSHostingView(rootView: rootView)
+        let window = makeWindow(contentView: hostingView)
+
+        window.makeKeyAndOrderFront(nil)
+        self.window = window
+        application.activate(ignoringOtherApps: true)
+        application.run()
+    }
+
+    private static func makeWindow(
+        contentView: NSView
+    ) -> NSWindow {
+        let size = NSSize(width: 1120, height: 760)
         let window = NSWindow(
-            contentRect: NSRect(x: 0, y: 0, width: 1120, height: 760),
+            contentRect: NSRect(origin: .zero, size: size),
             styleMask: [.titled, .closable, .miniaturizable, .resizable],
             backing: .buffered,
             defer: false
         )
         window.title = "Second Wind"
         window.minSize = NSSize(width: 920, height: 620)
-        let hostingView = NSHostingView(rootView: SecondWindApplicationView())
-        hostingView.frame = NSRect(x: 0, y: 0, width: 1120, height: 760)
-        hostingView.autoresizingMask = [.width, .height]
-        window.contentView = hostingView
+        contentView.frame = NSRect(origin: .zero, size: size)
+        contentView.autoresizingMask = [.width, .height]
+        window.contentView = contentView
         window.center()
-        window.makeKeyAndOrderFront(nil)
-        self.window = window
-        app.activate(ignoringOtherApps: true)
-        app.run()
+        return window
+    }
+}
+
+enum AuditExportFormat {
+    case json
+    case markdown
+    case diagnostics
+
+    var fileName: String {
+        switch self {
+        case .json: return "Second Wind Activity.json"
+        case .markdown: return "Second Wind Activity.md"
+        case .diagnostics: return "Second Wind Diagnostics.json"
+        }
+    }
+
+    var contentType: UTType {
+        self == .markdown ? .plainText : .json
     }
 }
 
@@ -56,7 +80,8 @@ private enum AppSection: String, CaseIterable, Identifiable {
     var symbol: String {
         switch self {
         case .dashboard: return "gauge.with.dots.needle.67percent"
-        case .snapshots: return "clock.arrow.trianglehead.counterclockwise.rotate.90"
+        case .snapshots:
+            return "clock.arrow.trianglehead.counterclockwise.rotate.90"
         case .inventoryInspector: return "list.bullet.rectangle.portrait"
         case .architecture: return "point.3.connected.trianglepath.dotted"
         case .developerStorage: return "hammer"
@@ -72,395 +97,163 @@ private enum AppSection: String, CaseIterable, Identifiable {
     }
 }
 
-enum AuditExportFormat {
-    case json
-    case markdown
-    case diagnostics
-
-    var fileName: String {
-        switch self {
-        case .json: return "Second Wind Activity.json"
-        case .markdown: return "Second Wind Activity.md"
-        case .diagnostics: return "Second Wind Diagnostics.json"
-        }
-    }
-
-    var contentType: UTType {
-        self == .markdown ? .plainText : .json
-    }
-}
-
-struct CleanupCompletion {
-    let itemCount: Int
-    let reclaimedBytes: Int64
-    let destination: PlanDestination
-}
-
-@MainActor @Observable final class SecondWindViewModel {
-    var findings: [Finding] = []
-    var selectedIDs: Set<UUID> = []
-    var selectedBytes: Int64 = 0
-    var actionableFindingCount = 0
-    var actionableBytes: Int64 = 0
-    var protectedFindingCount = 0
-    var reviewRequiredSelectionCount = 0
-    var cleanupReviewCandidates: [UUID: CleanupReviewCandidate] = [:]
-    var cleanupCategoryBytes: [FindingCategory: Int64] = [:]
-    var proposedPlan: CleanupPlan?
-    var cleanupPresentation: CleanupPresentationPhase = .idle
-    var cleanupCompletion: CleanupCompletion?
-    var message: String?
-    var isScanning = false
-    var scanProgress: OperationProgress?
-    var snapshot: DashboardSnapshot
-    var liveMetrics: LiveSystemMetrics
-    var applications: [InstalledApplication] = []
-    var applicationStorage = ApplicationInventory(storageInventory: StorageInventory(entries: []), applications: [])
-    var applicationPreview: ApplicationRemovalPreview?
-    var isLoadingApplicationPreview = false
-    var inspectedApplicationID: String?
-    var auditRecords: [AuditRecord]
-    var recoveryItems: [RecoveryItem]
-    var recoveryIntegrityReports: [UUID: RecoveryIntegrityReport] = [:]
-    var storageInventory = StorageInventory(entries: [])
-    var storageSnapshots = StorageSnapshotReport.empty
-    var latestScanSummary: StorageScanSummary?
-    var rulePolicy: RulePolicy
-    var menuMonitor = UserDefaults.standard.bool(forKey: "menuBarMonitorEnabled")
-    let home = FileManager.default.homeDirectoryForCurrentUser
-    let localStore: LocalDataStore
-    let monitorService: MonitorService
-    let liveMetricsService: LiveMetricsService
-    let storageScanService: any StorageScanning
-    let applicationInventoryBuilder = ApplicationInventoryBuilder()
-    let preferenceService = PreferenceService()
-    let operationCoordinator: any OperationCoordinator
-    var scanTask: Task<Void, Never>?
-    var activeScanID: UUID?
-    var activeOperationID: OperationID?
-    var findingBytesByID: [UUID: Int64] = [:]
-    var actionableFindingIDs: Set<UUID> = []
-    var reviewRequiredFindingIDs: Set<UUID> = []
-
-    init() {
-        let monitorService = MonitorService()
-        let localStore = LocalDataStore()
-        let operationCoordinator = LocalOperationCoordinator()
-        self.monitorService = monitorService
-        self.localStore = localStore
-        self.operationCoordinator = operationCoordinator
-        self.storageScanService = LocalStorageScanService(
-            operationCoordinator: operationCoordinator,
-            auditStore: localStore.audit,
-            snapshotService: StorageSnapshotService(store: localStore.snapshots)
-        )
-        self.liveMetricsService = LiveMetricsService()
-        self.snapshot = monitorService.snapshot()
-        self.auditRecords = localStore.audit.records()
-        self.rulePolicy = localStore.rulePolicy.policy()
-        let storedRecoveryItems = localStore.recovery.allItems()
-        self.recoveryItems = storedRecoveryItems
-        self.recoveryIntegrityReports = Dictionary(
-            uniqueKeysWithValues: storedRecoveryItems.map { ($0.id, localStore.recovery.integrityReport(for: $0)) }
-        )
-        liveMetrics = .unavailable
-    }
-
-    func scan() {
-        cancelScan()
-        let scanID = UUID()
-        activeScanID = scanID
-        isScanning = true
-        let rules = localStore.rulePolicy.effectiveRules()
-        let recoveryItems = recoveryItems
-        let totalBytes = snapshot.storageTotal
-        let availableBytes = snapshot.storageAvailable
-        let storageScanService = storageScanService
-        scanTask = Task { [weak self, storageScanService, recoveryItems, totalBytes, availableBytes] in
-            guard let self else { return }
-            let request = StorageScanRequest(home: self.home, rules: rules, recoveryItems: recoveryItems, totalBytes: totalBytes, availableBytes: availableBytes)
-            var completed = false
-            for await event in storageScanService.scan(request) {
-                guard self.activeScanID == scanID else { return }
-                switch event {
-                case let .started(run):
-                    self.activeOperationID = run.id
-                case let .progress(progress):
-                    self.scanProgress = progress
-                case let .completed(result):
-                    self.apply(result)
-                    completed = true
-                case let .failed(run):
-                    self.applyFailedScan(run)
-                    return
-                }
-            }
-            if !completed && !Task.isCancelled {
-                self.isScanning = false
-                self.message = "The scan ended before a completed inventory was available."
-            }
-        }
-    }
-
-    private func apply(_ result: StorageScanResult) {
-        replaceFindings(result.findings)
-        applications = result.applications
-        storageInventory = result.inventory
-        applicationStorage = applicationInventoryBuilder.build(storageInventory: result.inventory, applications: result.applications)
-        storageSnapshots = result.snapshotReport
-        latestScanSummary = result.summary
-        isScanning = false
-        scanProgress = nil
-        activeScanID = nil
-        activeOperationID = nil
-        scanTask = nil
-        refreshActivity()
-    }
-
-    private func applyFailedScan(_ run: ScanRun) {
-        isScanning = false
-        scanProgress = nil
-        activeScanID = nil
-        activeOperationID = nil
-        scanTask = nil
-        message = run.failure?.localizedDescription ?? "The scan could not complete. The previous completed inventory remains visible."
-    }
-    func cancelScan() {
-        scanTask?.cancel()
-        if let activeOperationID {
-            Task { await operationCoordinator.cancel(activeOperationID) }
-        }
-        scanTask = nil
-        activeScanID = nil
-        activeOperationID = nil
-        isScanning = false
-        scanProgress = nil
-    }
-    func makePlan() {
-        do {
-            proposedPlan = try PlanBuilder(home: home).makePlan(
-                findings: findings,
-                selectedIDs: selectedIDs,
-                destination: .recovery
-            )
-            if let plan = proposedPlan {
-                try? localStore.audit.append(.init(
-                    kind: .dryRun,
-                    planID: plan.id,
-                    ruleVersions: plan.actions.map(\.ruleVersionDescription),
-                    paths: plan.actions.map(\.sourcePath),
-                    bytes: plan.totalBytes,
-                    result: "reviewed plan"
-                ))
-            }
-            cleanupPresentation = .reviewingPlan
-            refreshActivity()
-        }
-        catch { message = error.localizedDescription }
-    }
-    func executePlan(destination: PlanDestination) {
-        guard proposedPlan != nil else { return }
-        do {
-            let plan = try PlanBuilder(home: home).makePlan(
-                findings: findings,
-                selectedIDs: selectedIDs,
-                destination: destination
-            )
-            let planBuilder = PlanBuilder(home: home)
-            let finderTrashMover = FinderTrashMover()
-            let executor = PlanExecutor(
-                planBuilder: planBuilder,
-                recoveryStore: localStore.recovery,
-                trashMover: finderTrashMover,
-                auditStore: localStore.audit
-            )
-            let coordinator = operationCoordinator
-            Task {
-                do {
-                    let operationID = try await coordinator.start(kind: .cleanup)
-                    let outcome = try await executor.executeWithOutcome(plan.confirmed(), operationID: operationID, verifier: LocalCleanupOutcomeVerifier(), availableBytesBefore: snapshot.storageAvailable)
-                    await coordinator.finish(operationID)
-                    let completedCount = outcome.results.filter { result in
-                        switch result.outcome { case .completedAndVerified, .completedNotYetObservable: return true; default: return false }
-                    }.count
-                    cleanupCompletion = .init(itemCount: completedCount, reclaimedBytes: outcome.movedBytes, destination: plan.destination)
-                    clearSelection()
-                    proposedPlan = nil
-                    cleanupPresentation = .idle
-                    scan()
-                    refreshActivity()
-                    cleanupPresentation = .showingCompletion
-                } catch let error as PlanExecutionError {
-                    if case let .actionFailed(completedPaths, _, _) = error, !completedPaths.isEmpty {
-                        scan()
-                    }
-                    message = error.localizedDescription
-                } catch {
-                    message = error.localizedDescription
-                }
-            }
-        }
-        catch { message = error.localizedDescription }
-    }
-    /// Fast-path Trash still operates only on findings from the current scan.
-    /// It intentionally has no public URL-based entry point.
-    func moveFindingsDirectlyToTrash(_ candidates: [Finding]) {
-        let currentFindings = candidates.filter { candidate in
-            findings.contains(where: { $0.id == candidate.id }) &&
-                candidate.risk.isExecutable && candidate.supportedAction != .none
-        }
-        guard !currentFindings.isEmpty else { return }
-
-        Task {
-            let finderTrashMover = FinderTrashMover()
-            var movedPaths: [String] = []
-            var failures: [(path: String, reason: String)] = []
-
-            for finding in currentFindings {
-                let url = URL(fileURLWithPath: finding.path).standardizedFileURL
-                let path = url.standardizedFileURL.path
-                do {
-                    try await finderTrashMover.moveToTrash(url)
-                    movedPaths.append(path)
-                } catch {
-                    failures.append((path, error.localizedDescription))
-                }
-            }
-
-            if !movedPaths.isEmpty {
-                let movedFindings = currentFindings.filter { finding in movedPaths.contains(finding.path) }
-                try? localStore.audit.append(.init(
-                    kind: .manualTrash,
-                    ruleVersions: Array(Set(movedFindings.map { "\($0.ruleID) v\($0.ruleVersion)" })).sorted(),
-                    paths: movedPaths,
-                    bytes: movedFindings.reduce(0) { $0 + $1.byteSize },
-                    destination: .finderTrash,
-                    result: "moved \(movedPaths.count) user-selected item(s) to Finder Trash"
-                ))
-                let remainingFindings = findings.filter { finding in
-                    movedPaths.contains { path in
-                        finding.path != path && !finding.path.hasPrefix(path + "/")
-                    }
-                }
-                replaceFindings(remainingFindings)
-            }
-            if !failures.isEmpty {
-                try? localStore.audit.append(.init(
-                    kind: .failure,
-                    ruleVersions: Array(Set(currentFindings.map { "\($0.ruleID) v\($0.ruleVersion)" })).sorted(),
-                    paths: failures.map(\.path),
-                    bytes: 0,
-                    destination: .finderTrash,
-                    result: failures.map { "\($0.path): \($0.reason)" }.joined(separator: "\n")
-                ))
-            }
-            refreshActivity()
-            if !movedPaths.isEmpty {
-                scan()
-            }
-
-            switch (movedPaths.count, failures.count) {
-            case (0, _):
-                message = "Nothing moved to Trash. \(failures.first?.reason ?? "macOS did not allow the change.")"
-            case (_, 0):
-                message = "Moved \(movedPaths.count) item(s) to Finder Trash."
-            default:
-                message = "Moved \(movedPaths.count) item(s) to Finder Trash. \(failures.count) could not be moved: \(failures.first?.reason ?? "unknown error")"
-            }
-        }
-    }
-    func moveSelectedItemsToTrash() {
-        let selectedFindings = findings
-            .filter { selectedIDs.contains($0.id) }
-        moveFindingsDirectlyToTrash(selectedFindings)
-    }
-}
-
-enum CleanupPresentationPhase {
-    case idle
-    case reviewingPlan
-    case showingCompletion
-}
-
 private struct SecondWindApplicationView: View {
-    @State private var model = SecondWindViewModel()
+    @State private var model: SecondWindViewModel
     @State private var navigation = NavigationModel()
+
+    init(runtime: SecondWindRuntime) {
+        _model = State(
+            initialValue: SecondWindViewModel(runtime: runtime)
+        )
+    }
+
     var body: some View {
         NavigationSplitView {
-            List(selection: $navigation.section) {
-                Section {
-                    HStack(spacing: 10) {
-                        Image(systemName: "wind.circle.fill")
-                            .font(.title2)
-                            .foregroundStyle(.green)
-                        VStack(alignment: .leading, spacing: 2) {
-                            Text("Second Wind").font(.headline)
-                            Text("Private Mac care").font(.caption).foregroundStyle(.secondary)
-                        }
-                    }
-                    .padding(.vertical, 10)
-                }
-                Section("OVERVIEW") {
-                    sidebarItem(.dashboard)
-                }
-                Section("MAKE SPACE") {
-                    sidebarItem(.cleanup)
-                    sidebarItem(.applications)
-                    sidebarItem(.rules)
-                }
-                Section("INSIGHTS") {
-                    sidebarItem(.snapshots)
-                    sidebarItem(.inventoryInspector)
-                    sidebarItem(.architecture)
-                    sidebarItem(.developerStorage)
-                    sidebarItem(.monitor)
-                    sidebarItem(.activity)
-                }
-                Section("SYSTEM") {
-                    sidebarItem(.volumeCheck)
-                    sidebarItem(.systemTasks)
-                    sidebarItem(.settings)
-                }
-            }
-                .listStyle(.sidebar)
-                .navigationTitle("Second Wind")
+            sidebar
         } detail: {
-            switch navigation.section ?? .dashboard {
-            case .dashboard: DashboardScreen(model: model) { navigation.section = .cleanup }
-            case .snapshots: StorageIntelligenceView(model: model)
-            case .inventoryInspector: InventoryInspectorScreen(model: model)
-            case .architecture: ArchitectureExplorerScreen()
-            case .developerStorage: DeveloperStorageScreen(model: model)
-            case .monitor: SystemMonitorScreen(model: model)
-            case .cleanup: CleanupScreen(model: model)
-            case .applications: ApplicationsScreen(model: model) { navigation.section = .cleanup }
-            case .rules: RulesScreen(model: model)
-            case .volumeCheck: VolumeCheckScreen(model: model)
-            case .systemTasks: SystemTasksScreen(model: model)
-            case .settings: SettingsScreen(model: model)
-            case .activity: RecoveryActivityScreen(model: model)
-            }
+            selectedScreen
         }
-        .alert("Second Wind", isPresented: Binding(get: { model.message != nil }, set: { if !$0 { model.message = nil } })) { Button("OK") { model.message = nil } } message: { Text(model.message ?? "") }
-        .sheet(isPresented: Binding(
-            get: { model.cleanupPresentation == .reviewingPlan },
-            set: { if !$0, model.cleanupPresentation == .reviewingPlan { model.cleanupPresentation = .idle } }
-        )) { CleanupPlanReviewSheet(model: model) }
-        .sheet(isPresented: Binding(
-            get: { model.cleanupPresentation == .showingCompletion },
-            set: { if !$0, model.cleanupPresentation == .showingCompletion { model.cleanupPresentation = .idle } }
-        )) {
+        .alert(
+            "Second Wind",
+            isPresented: messageIsPresented
+        ) {
+            Button("OK") { model.message = nil }
+        } message: {
+            Text(model.message ?? "")
+        }
+        .sheet(isPresented: cleanupReviewIsPresented) {
+            CleanupPlanReviewSheet(model: model)
+        }
+        .sheet(isPresented: cleanupCompletionIsPresented) {
             if let completion = model.cleanupCompletion {
-                CleanupCompletionSheet(completion: completion) { navigation.section = .activity }
+                CleanupCompletionSheet(completion: completion) {
+                    navigation.section = .activity
+                }
             }
         }
-        .task { model.refreshDashboard(); model.scan() }
+        .task {
+            model.refreshDashboard()
+            model.scan()
+        }
         .frame(minWidth: 920, minHeight: 620)
     }
 
+    private var sidebar: some View {
+        List(selection: $navigation.section) {
+            brand
+            Section("OVERVIEW") {
+                sidebarItem(.dashboard)
+            }
+            Section("MAKE SPACE") {
+                sidebarItem(.cleanup)
+                sidebarItem(.applications)
+                sidebarItem(.rules)
+            }
+            Section("INSIGHTS") {
+                sidebarItem(.snapshots)
+                sidebarItem(.inventoryInspector)
+                sidebarItem(.architecture)
+                sidebarItem(.developerStorage)
+                sidebarItem(.monitor)
+                sidebarItem(.activity)
+            }
+            Section("SYSTEM") {
+                sidebarItem(.volumeCheck)
+                sidebarItem(.systemTasks)
+                sidebarItem(.settings)
+            }
+        }
+        .listStyle(.sidebar)
+        .navigationTitle("Second Wind")
+    }
+
+    private var brand: some View {
+        Section {
+            HStack(spacing: 10) {
+                Image(systemName: "wind.circle.fill")
+                    .font(.title2)
+                    .foregroundStyle(.green)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Second Wind").font(.headline)
+                    Text("Private Mac care")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+            }
+            .padding(.vertical, 10)
+        }
+    }
+
     @ViewBuilder
-    private func sidebarItem(_ section: AppSection) -> some View {
-        Label(section.rawValue, systemImage: section.symbol).tag(section)
+    private var selectedScreen: some View {
+        switch navigation.section ?? .dashboard {
+        case .dashboard:
+            DashboardScreen(model: model) {
+                navigation.section = .cleanup
+            }
+        case .snapshots:
+            StorageIntelligenceView(model: model)
+        case .inventoryInspector:
+            InventoryInspectorScreen(model: model)
+        case .architecture:
+            ArchitectureExplorerScreen()
+        case .developerStorage:
+            DeveloperStorageScreen(model: model)
+        case .monitor:
+            SystemMonitorScreen(model: model)
+        case .cleanup:
+            CleanupScreen(model: model)
+        case .applications:
+            ApplicationsScreen(model: model) {
+                navigation.section = .cleanup
+            }
+        case .rules:
+            RulesScreen(model: model)
+        case .volumeCheck:
+            VolumeCheckScreen(model: model)
+        case .systemTasks:
+            SystemTasksScreen(model: model)
+        case .settings:
+            SettingsScreen(model: model)
+        case .activity:
+            RecoveryActivityScreen(model: model)
+        }
+    }
+
+    private var messageIsPresented: Binding<Bool> {
+        Binding(
+            get: { model.message != nil },
+            set: { if !$0 { model.message = nil } }
+        )
+    }
+
+    private var cleanupReviewIsPresented: Binding<Bool> {
+        presentationBinding(for: .reviewingPlan)
+    }
+
+    private var cleanupCompletionIsPresented: Binding<Bool> {
+        presentationBinding(for: .showingCompletion)
+    }
+
+    private func presentationBinding(
+        for phase: CleanupPresentationPhase
+    ) -> Binding<Bool> {
+        Binding(
+            get: { model.cleanupPresentation == phase },
+            set: { isPresented in
+                if !isPresented, model.cleanupPresentation == phase {
+                    model.cleanupPresentation = .idle
+                }
+            }
+        )
+    }
+
+    @ViewBuilder
+    private func sidebarItem(
+        _ section: AppSection
+    ) -> some View {
+        Label(section.rawValue, systemImage: section.symbol)
+            .tag(section)
     }
 }
 

@@ -72,6 +72,35 @@ final class CleanupScannerTests: XCTestCase {
         XCTAssertTrue(findings.allSatisfy { $0.ruleVersion == 2 })
     }
 
+    func testNoIndexSuffixIsHiddenOnlyFromTheDisplayTitle() {
+        let home = URL(fileURLWithPath: "/fixture-home")
+        let root = home.appendingPathComponent("Library/Caches/Example")
+        let child = root.appendingPathComponent("CompilationCache.noindex")
+        let rule = BuiltInRule(
+            id: "example-cache",
+            title: "Example cache",
+            relativePath: "Library/Caches/Example",
+            category: .caches,
+            risk: .safe,
+            action: .cleanup,
+            explanation: "Recreated on demand.",
+            findingScope: .immediateChildren
+        )
+        let fileSystem = FixtureFileSystem(
+            paths: [root: 1_000, child: 1_000],
+            children: [root: [child]]
+        )
+
+        let finding = CleanupScanner(
+            home: home,
+            fileSystem: fileSystem,
+            rules: [rule]
+        ).scan().first
+
+        XCTAssertEqual(finding?.title, "Example cache: CompilationCache")
+        XCTAssertEqual(finding?.path, child.path)
+    }
+
     func testSensitiveDataRemainsProtectedByBundledPolicy() {
         let policy = Dictionary(uniqueKeysWithValues: BuiltInRules.all.map { ($0.id, $0) })
 
@@ -89,7 +118,7 @@ private struct FixtureFileSystem: FileSystem {
     var children: [URL: [URL]] = [:]
 
     func exists(_ url: URL) -> Bool { paths[url] != nil }
-    func fileSize(at url: URL) -> Int64 { paths[url] ?? 0 }
+    func allocatedSize(at url: URL) -> Int64 { paths[url] ?? 0 }
     func directChildren(in root: URL) -> [URL] { children[root] ?? [] }
     func regularFiles(in root: URL, maximumDepth: Int) -> [URL] { [] }
 }
