@@ -1,5 +1,6 @@
 import Foundation
 import Network
+import SecondWindCore
 
 /// A small HTTP/1.1 server limited to 127.0.0.1. It serves immutable snapshots
 /// only and intentionally has no mutation or scan endpoint.
@@ -130,7 +131,7 @@ public final class LocalObservabilityServer: LocalObservabilityServing, @uncheck
 
 /// Runs the standalone process. Its refresh task reads only already persisted
 /// local documents, then replaces the served immutable snapshot atomically.
-public final class LocalObservabilityRunner: @unchecked Sendable {
+public final class LocalObservabilityRunner: Runner, @unchecked Sendable {
     private let configuration: LocalObservabilityConfiguration
     private let source: PersistedObservabilitySnapshotProvider
     private let snapshots: LocalObservabilitySnapshotStore

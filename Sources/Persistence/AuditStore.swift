@@ -20,30 +20,25 @@ public struct AuditStore: AuditStoring, Sendable {
             withIntermediateDirectories: true
         )
 
-        let encoder = JSONEncoder()
-        encoder.dateEncodingStrategy = .iso8601
-        let data = try encoder.encode(record)
-
-        let existing = (try? Data(contentsOf: auditFileURL)) ?? Data()
-        var updated = existing
-        updated.append(data)
-        updated.append(Data("\n".utf8))
-        try updated.write(to: auditFileURL, options: .atomic)
+        var storedRecords = try loadStoredRecords()
+        storedRecords.append(record)
+        let lines = try storedRecords.map { record in
+            try PersistenceDocumentCodec.encodeLine(record)
+        }
+        var document = Data()
+        for line in lines {
+            document.append(line)
+            document.append(Data("\n".utf8))
+        }
+        try document.write(to: auditFileURL, options: .atomic)
     }
 
     public func records() -> [AuditRecord] {
-        guard let text = try? String(contentsOf: auditFileURL, encoding: .utf8) else {
-            return []
-        }
-
-        return text
-            .split(separator: "\n")
-            .compactMap { try? JSONDecoder.secondWind.decode(AuditRecord.self, from: Data($0.utf8)) }
-            .reversed()
+        Array(((try? loadStoredRecords()) ?? []).reversed())
     }
 
     public func exportJSON() throws -> Data {
-        try JSONEncoder.secondWind.encode(records())
+        try PersistenceDocumentCodec.encode(records())
     }
 
     public func exportMarkdown() -> String {
@@ -53,5 +48,24 @@ public struct AuditStore: AuditStoring, Sendable {
                     "  - Paths: \(record.paths.joined(separator: ", "))"
             }
             .joined(separator: "\n")
+    }
+
+    public func loadRecords() throws -> [AuditRecord] {
+        Array(try loadStoredRecords().reversed())
+    }
+
+    private func loadStoredRecords() throws -> [AuditRecord] {
+        guard FileManager.default.fileExists(atPath: auditFileURL.path) else { return [] }
+        let text = try String(contentsOf: auditFileURL, encoding: .utf8)
+        return try text.split(separator: "\n").map { line in
+            let data = Data(line.utf8)
+            return try PersistenceDocumentCodec.decode(
+                AuditRecord.self,
+                from: data,
+                documentName: "activity"
+            ) {
+                try JSONDecoder.secondWind.decode(AuditRecord.self, from: data)
+            }
+        }
     }
 }

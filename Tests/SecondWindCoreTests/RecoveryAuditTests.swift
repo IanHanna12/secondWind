@@ -16,6 +16,115 @@ final class RecoveryAuditTests: XCTestCase {
         XCTAssertEqual(item.recoveryPath, "/tmp/Recovery/payload/report.txt")
     }
 
+    func testRecoveryManifestUsesTheStableSchemaEnvelope() throws {
+        let root = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        defer { try? FileManager.default.removeItem(at: root) }
+        let source = root.appendingPathComponent("report.txt")
+        try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
+        try Data("stored".utf8).write(to: source)
+
+        let store = RecoveryStore(root: root.appendingPathComponent("Recovery"))
+        let item = try store.storeInRecovery(source, planID: UUID())
+        let manifestURL = store.root.appendingPathComponent(item.id.uuidString).appendingPathComponent("manifest.json")
+        let document = try XCTUnwrap(JSONSerialization.jsonObject(with: Data(contentsOf: manifestURL)) as? [String: Any])
+
+        XCTAssertEqual(document["schemaVersion"] as? Int, 1)
+        XCTAssertTrue(store.integrityReport(for: item).canRestore)
+    }
+
+    func testLegacyRecoveryManifestRemainsRestorable() throws {
+        let root = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        defer { try? FileManager.default.removeItem(at: root) }
+        let source = root.appendingPathComponent("report.txt")
+        try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
+        try Data("stored".utf8).write(to: source)
+
+        let store = RecoveryStore(root: root.appendingPathComponent("Recovery"))
+        let item = try store.storeInRecovery(source, planID: UUID())
+        let manifestURL = store.root.appendingPathComponent(item.id.uuidString).appendingPathComponent("manifest.json")
+        try JSONEncoder.secondWind.encode(item).write(to: manifestURL, options: .atomic)
+
+        XCTAssertEqual(store.allItems().map(\.id), [item.id])
+        XCTAssertTrue(store.integrityReport(for: item).canRestore)
+    }
+
+    func testFutureRecoveryManifestStaysVisibleAsDamagedAndUntouched() throws {
+        let root = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        defer { try? FileManager.default.removeItem(at: root) }
+        let source = root.appendingPathComponent("report.txt")
+        try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
+        try Data("stored".utf8).write(to: source)
+
+        let store = RecoveryStore(root: root.appendingPathComponent("Recovery"))
+        let item = try store.storeInRecovery(source, planID: UUID())
+        let manifestURL = store.root.appendingPathComponent(item.id.uuidString).appendingPathComponent("manifest.json")
+        let futureDocument = Data("{\"schemaVersion\":999,\"payload\":{}}".utf8)
+        try futureDocument.write(to: manifestURL, options: .atomic)
+
+        let report = store.integrityReport(for: item)
+        XCTAssertFalse(report.canRestore)
+        XCTAssertEqual(try Data(contentsOf: manifestURL), futureDocument)
+        XCTAssertTrue(FileManager.default.fileExists(atPath: item.recoveryPath))
+        XCTAssertEqual(store.allItems().map(\.id), [item.id])
+    }
+
+    func testMissingManifestRemainsVisibleAndCanOnlyDeleteItsContainedPayload() throws {
+        let root = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        defer { try? FileManager.default.removeItem(at: root) }
+        let source = root.appendingPathComponent("report.txt")
+        try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
+        try Data("stored".utf8).write(to: source)
+
+        let store = RecoveryStore(root: root.appendingPathComponent("Recovery"))
+        let item = try store.storeInRecovery(source, planID: UUID())
+        let manifestURL = store.root.appendingPathComponent(item.id.uuidString).appendingPathComponent("manifest.json")
+        try FileManager.default.removeItem(at: manifestURL)
+
+        let damagedItem = try XCTUnwrap(store.allItems().first)
+        XCTAssertEqual(damagedItem.id, item.id)
+        XCTAssertEqual(damagedItem.originalPath, "Original location unavailable")
+        XCTAssertFalse(store.integrityReport(for: damagedItem).canRestore)
+        XCTAssertThrowsError(try store.restore(damagedItem))
+
+        try store.deletePermanently(damagedItem)
+        XCTAssertTrue(store.allItems().isEmpty)
+    }
+
+    func testLegacyAuditMigratesToVersionedJSONLinesOnAppend() throws {
+        let root = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        defer { try? FileManager.default.removeItem(at: root) }
+        let url = root.appendingPathComponent("audit.jsonl")
+        try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
+        let legacy = AuditRecord(kind: .scan, ruleVersions: [], paths: [], bytes: 0, result: "completed: legacy")
+        let legacyEncoder = JSONEncoder()
+        legacyEncoder.dateEncodingStrategy = .iso8601
+        try legacyEncoder.encode(legacy).write(to: url)
+
+        let store = AuditStore(fileURL: url)
+        XCTAssertEqual(try store.loadRecords().map(\.id), [legacy.id])
+        try store.append(.init(kind: .maintenance, ruleVersions: [], paths: [], bytes: 0, result: "next"))
+
+        let lines = try String(contentsOf: url, encoding: .utf8).split(separator: "\n")
+        XCTAssertEqual(lines.count, 2)
+        for line in lines {
+            let document = try XCTUnwrap(JSONSerialization.jsonObject(with: Data(line.utf8)) as? [String: Any])
+            XCTAssertEqual(document["schemaVersion"] as? Int, 1)
+        }
+    }
+
+    func testFutureAuditSchemaBlocksAppendWithoutChangingTheDocument() throws {
+        let root = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        defer { try? FileManager.default.removeItem(at: root) }
+        let url = root.appendingPathComponent("audit.jsonl")
+        try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
+        let futureDocument = Data("{\"schemaVersion\":999,\"payload\":{}}\n".utf8)
+        try futureDocument.write(to: url)
+        let store = AuditStore(fileURL: url)
+
+        XCTAssertThrowsError(try store.append(.init(kind: .maintenance, ruleVersions: [], paths: [], bytes: 0, result: "next")))
+        XCTAssertEqual(try Data(contentsOf: url), futureDocument)
+    }
+
     func testRestoreCollisionUsesDescriptiveRecoveryName() throws {
         let root = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
         defer { try? FileManager.default.removeItem(at: root) }
@@ -146,5 +255,7 @@ final class RecoveryAuditTests: XCTestCase {
         XCTAssertEqual(outcome.completedCount, outcome.results.count)
         XCTAssertEqual(try Data(contentsOf: source), Data("stored".utf8))
         XCTAssertTrue(store.allItems().isEmpty)
+        let remainingNames = try FileManager.default.contentsOfDirectory(atPath: source.deletingLastPathComponent().path)
+        XCTAssertFalse(remainingNames.contains { $0.hasPrefix(".secondwind-replacement-backup-") })
     }
 }

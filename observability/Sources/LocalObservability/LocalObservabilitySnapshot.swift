@@ -155,7 +155,7 @@ public struct PersistedObservabilitySnapshotProvider: ObservabilitySnapshotProvi
 
 /// Keeps one immutable snapshot for the HTTP layer. A replacement is atomic
 /// from the server's perspective; no request observes a partial refresh.
-public actor LocalObservabilitySnapshotStore: ObservabilitySnapshotProviding {
+public actor LocalObservabilitySnapshotStore: ObservabilitySnapshotProviding, Store {
     private var current: LocalObservabilitySnapshot?
 
     public init(initial: LocalObservabilitySnapshot? = nil) {

@@ -123,6 +123,55 @@ public enum ApplicationAssociationEvidence: String, Codable, Sendable {
     }
 }
 
+/// Safety boundary for application storage whose bundle identifier no longer
+/// appears in the installed-app inventory. An absent app is not proof that its
+/// data is disposable: system services and user data can use the same layout.
+public enum OrphanedApplicationStoragePolicy: Policy {
+    /// Only third-party caches and logs can enter the reviewed cleanup flow.
+    /// Application Support, Containers, Preferences, and saved state stay
+    /// visible as protected context because they may contain user data.
+    public static func permitsCleanup(
+        bundleIdentifier: String,
+        relationship: ApplicationStorageRelationship
+    ) -> Bool {
+        guard !isAppleOwned(bundleIdentifier) else { return false }
+        return relationship == .cache || relationship == .logs
+    }
+
+    /// Revalidates the orphan rule from its durable plan action. This prevents
+    /// a caller from turning a protected orphan path into a cleanup action by
+    /// bypassing the discovery UI.
+    public static func permitsCleanup(path: String, home: URL) -> Bool {
+        let candidate = URL(fileURLWithPath: path).standardizedFileURL
+        let library = home.standardizedFileURL.appendingPathComponent("Library")
+        let permittedRoots = [
+            library.appendingPathComponent("Caches"),
+            library.appendingPathComponent("Logs")
+        ]
+
+        let parentPath = candidate.deletingLastPathComponent().standardizedFileURL.path
+        guard permittedRoots.contains(where: { parentPath == $0.standardizedFileURL.path }) else {
+            return false
+        }
+        return !isAppleOwned(candidate.lastPathComponent)
+    }
+
+    public static func protectionReason(
+        bundleIdentifier: String,
+        relationship: ApplicationStorageRelationship
+    ) -> String {
+        if isAppleOwned(bundleIdentifier) {
+            return "Apple-owned application storage remains protected because an installed-app lookup cannot prove that macOS no longer uses it."
+        }
+        return "Possible orphaned \(relationship.title.lowercased()) remains protected because it may contain user data or application state."
+    }
+
+    private static func isAppleOwned(_ bundleIdentifier: String) -> Bool {
+        let identifier = bundleIdentifier.lowercased()
+        return identifier == "com.apple" || identifier.hasPrefix("com.apple.")
+    }
+}
+
 /// Stable metadata describing an application, independent of any associated storage.
 public struct ApplicationIdentity: Codable, Hashable, Identifiable, Sendable {
     public let id: String
@@ -218,7 +267,7 @@ public struct ApplicationProfile: Identifiable, Sendable {
     }
 }
 
-public struct ApplicationInventory: Sendable {
+public struct ApplicationInventory: Inventory {
     public let profiles: [ApplicationProfile]
 
     public init(storageInventory: StorageInventory, applications: [InstalledApplication]) {

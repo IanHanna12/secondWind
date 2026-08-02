@@ -45,6 +45,51 @@ final class StorageSnapshotTests: XCTestCase {
         XCTAssertEqual(store.snapshots().first?.entries.first?.title, "Logs")
     }
 
+    func testLegacySnapshotsMigrateOnlyAfterTheNextSuccessfulWrite() throws {
+        let url = temporaryURL()
+        defer { try? FileManager.default.removeItem(at: url.deletingLastPathComponent()) }
+        let original = StorageSnapshot(
+            capturedAt: Date(timeIntervalSinceReferenceDate: 100),
+            totalBytes: 100,
+            availableBytes: 50,
+            entries: [entry(key: "legacy", title: "Legacy", bytes: 10)]
+        )
+        try FileManager.default.createDirectory(at: url.deletingLastPathComponent(), withIntermediateDirectories: true)
+        try JSONEncoder.secondWind.encode([original]).write(to: url)
+
+        let store = StorageSnapshotStore(fileURL: url)
+        XCTAssertEqual(try store.load().map(\.id), [original.id])
+        XCTAssertNil((try JSONSerialization.jsonObject(with: Data(contentsOf: url)) as? [String: Any])?["schemaVersion"])
+
+        let next = StorageSnapshot(
+            capturedAt: original.capturedAt.addingTimeInterval(60),
+            totalBytes: 100,
+            availableBytes: 60,
+            entries: []
+        )
+        XCTAssertEqual(try store.append(next).count, 2)
+
+        let document = try XCTUnwrap(JSONSerialization.jsonObject(with: Data(contentsOf: url)) as? [String: Any])
+        XCTAssertEqual(document["schemaVersion"] as? Int, 1)
+    }
+
+    func testFutureSnapshotSchemaIsRejectedWithoutChangingTheDocument() throws {
+        let url = temporaryURL()
+        defer { try? FileManager.default.removeItem(at: url.deletingLastPathComponent()) }
+        try FileManager.default.createDirectory(at: url.deletingLastPathComponent(), withIntermediateDirectories: true)
+        let futureDocument = Data("{\"schemaVersion\":999,\"payload\":[]}".utf8)
+        try futureDocument.write(to: url)
+        let store = StorageSnapshotStore(fileURL: url)
+
+        XCTAssertThrowsError(try store.append(StorageSnapshot(totalBytes: 1, availableBytes: 1, entries: []))) { error in
+            XCTAssertEqual(
+                error as? PersistenceDocumentError,
+                .unsupportedFutureVersion(document: "storage snapshots", version: 999)
+            )
+        }
+        XCTAssertEqual(try Data(contentsOf: url), futureDocument)
+    }
+
     func testInventoryIsTheSharedSourceForRecoveryAndKnownFindings() {
         let finding = Finding(
             ruleID: "xcode", ruleVersion: 1, title: "Derived Data", path: "/Users/test/Library/Developer/Xcode/DerivedData",

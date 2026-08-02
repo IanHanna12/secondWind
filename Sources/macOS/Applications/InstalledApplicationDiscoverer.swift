@@ -87,7 +87,7 @@ public struct ApplicationRemovalInspection: Sendable {
     public let moveAuthorization: ApplicationMoveAuthorization
 }
 
-public struct InstalledApplicationInventory: @unchecked Sendable {
+public struct InstalledApplicationDiscoverer: ApplicationDiscovering, @unchecked Sendable {
     private let fileManager: FileManager
     private let home: URL
 
@@ -171,5 +171,3 @@ public struct InstalledApplicationInventory: @unchecked Sendable {
     private func fileFlags(at url: URL) -> UInt32 { var information = stat(); guard lstat(url.path, &information) == 0 else { return 0 }; return UInt32(information.st_flags) }
     private func hasExtendedACL(at url: URL) -> Bool { let list = url.path.withCString { acl_get_file($0, ACL_TYPE_EXTENDED) }; guard let list else { return false }; defer { acl_free(UnsafeMutableRawPointer(list)) }; var entry: acl_entry_t?; return acl_get_entry(list, 0, &entry) == 0 }
 }
-
-extension InstalledApplicationInventory: ApplicationDiscovering {}

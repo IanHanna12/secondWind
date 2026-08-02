@@ -16,6 +16,15 @@ struct RulesScreen: View {
 
     var body: some View {
         List {
+            if let rulePolicyLoadError = model.rulePolicyLoadError {
+                Section("Stored policy unavailable") {
+                    Label(rulePolicyLoadError, systemImage: "exclamationmark.triangle.fill")
+                        .foregroundStyle(.orange)
+                    Text("Second Wind left the stored document untouched and is using its built-in rules for this session. Fix or replace the policy before saving local changes.")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+            }
             Section("Bundled rules") {
                 Text("Bundled routes are fixed safety boundaries. You can disable a rule locally, but cannot redirect it to another path.")
                     .font(.caption).foregroundStyle(.secondary)
@@ -39,18 +48,32 @@ struct RulesScreen: View {
                 TextField("Why this is safe", text: $explanation)
                 Button("Add rule") {
                     let name = title.isEmpty ? route.title : title
-                    policy.userRules.append(.init(title: name, route: route, explanation: explanation.isEmpty ? "User-approved route within Second Wind's safe boundary." : explanation))
-                    save()
-                    title = ""; explanation = ""
+                    let reason = explanation.isEmpty
+                        ? "User-approved route within Second Wind's safe boundary."
+                        : explanation
+                    let change = RulePolicyChange.addUserRule(
+                        title: name,
+                        route: route,
+                        explanation: reason
+                    )
+                    if let updatedPolicy = model.applyRulePolicyChange(change) {
+                        policy = updatedPolicy
+                        title = ""
+                        explanation = ""
+                    }
                 }
             }
             Section("Your route rules") {
                 if policy.userRules.isEmpty { Text("No local route rules yet.").foregroundStyle(.secondary) }
-                ForEach($policy.userRules) { $rule in
-                    Toggle(isOn: $rule.isEnabled) { VStack(alignment: .leading) { Text(rule.title); Text(rule.route.rawValue).font(.caption.monospaced()).foregroundStyle(.secondary) } }
-                        .onChange(of: rule.isEnabled) { _, _ in save() }
+                ForEach(policy.userRules) { rule in
+                    Toggle(isOn: userRuleEnabledBinding(for: rule)) {
+                        VStack(alignment: .leading) {
+                            Text(rule.title)
+                            Text(rule.route.rawValue).font(.caption.monospaced()).foregroundStyle(.secondary)
+                        }
+                    }
                 }
-                .onDelete { policy.userRules.remove(atOffsets: $0); save() }
+                .onDelete(perform: removeUserRules)
             }
             Section { Button("Export rules as JSON") { export() } } footer: { Text("JSON is an export record. Rules are created and edited only here.") }
         }
@@ -61,24 +84,40 @@ struct RulesScreen: View {
         Binding(
             get: { !policy.disabledBuiltInRuleIDs.contains(rule.id) },
             set: { enabled in
-                if enabled {
-                    policy.disabledBuiltInRuleIDs.remove(rule.id)
-                } else {
-                    policy.disabledBuiltInRuleIDs.insert(rule.id)
+                if let updatedPolicy = model.applyRulePolicyChange(.builtInRule(id: rule.id, enabled: enabled)) {
+                    policy = updatedPolicy
                 }
-                save()
             }
         )
+    }
+
+    private func userRuleEnabledBinding(for rule: UserCleanupRule) -> Binding<Bool> {
+        Binding(
+            get: {
+                policy.userRules.first(where: { $0.id == rule.id })?.isEnabled ?? false
+            },
+            set: { enabled in
+                if let updatedPolicy = model.applyRulePolicyChange(.userRule(id: rule.id, enabled: enabled)) {
+                    policy = updatedPolicy
+                }
+            }
+        )
+    }
+
+    private func removeUserRules(at offsets: IndexSet) {
+        let ids = Set(offsets.compactMap { index in
+            policy.userRules.indices.contains(index) ? policy.userRules[index].id : nil
+        })
+        guard !ids.isEmpty else { return }
+        if let updatedPolicy = model.applyRulePolicyChange(.removeUserRules(ids: ids)) {
+            policy = updatedPolicy
+        }
     }
 
     private func entriesMatched(by rule: BuiltInRule) -> [StorageInventoryEntry] {
         model.storageInventory.entries.filter { entry in
             entry.ruleID == rule.id
         }
-    }
-
-    private func save() {
-        model.saveRulePolicy(policy)
     }
 
     private func export() {

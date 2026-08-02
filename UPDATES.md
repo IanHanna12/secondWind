@@ -6,11 +6,31 @@ linked Git commit.
 
 ## Current public development version
 
-**0.9.0 Preview** — Local Observability: an optional, fully standalone
-loopback-only companion can expose aggregated existing local history to
-Prometheus and Grafana. The app remains the operational product and does not
-depend on the companion. This remains a non-notarized preview; interfaces,
-rules, and stored formats may still change incompatibly.
+**1.0.0 — Stable Foundation:** the existing scan, inventory, explainability,
+reviewed cleanup, Recovery, history, rules, and optional local observability
+flow now has a documented compatibility and migration contract. The release is
+still distributed directly and without Apple notarization, but it is no longer
+labelled as a data-format preview.
+
+## 2 August 2026
+
+- Added schema-versioned envelopes for Storage Snapshots, Activity records,
+  and Recovery manifests. Supported preview formats remain readable and are
+  migrated only on the next successful write.
+- Unsupported future and damaged durable documents are left untouched and
+  block replacement instead of silently erasing the previous state.
+- Every JSON API v1 response now identifies its schema version. Existing
+  Prometheus metric names and JSON API v1 fields form a compatibility contract
+  for the v1.x line.
+- A damaged or unsupported local rule policy is visibly replaced by safe
+  built-in rules for the current session while the original document remains
+  untouched.
+- Added stable installation, migration, privacy, support, security, and known
+  limitation documentation, plus structured bug and feature request forms.
+- Reworked release packaging around `Second-Wind-1.0.0.zip` and a shared
+  `SHA256SUMS` file, with version, build, revision, resources, helper exclusion,
+  signing consistency, and user-data checks.
+- Removed inactive Finder, Dock, and menu-bar preference controls.
 
 ## 30 July 2026
 

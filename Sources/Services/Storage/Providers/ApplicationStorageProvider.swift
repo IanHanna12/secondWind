@@ -8,7 +8,7 @@ public struct ApplicationStorageProvider: StorageInventoryProvider {
     private let discoverApplications: @Sendable (URL) -> [InstalledApplication]
     private let fileSystem: any FileSystem
 
-    public init(fileSystem: any FileSystem = LocalFileSystem(), discoverApplications: @escaping @Sendable (URL) -> [InstalledApplication] = { InstalledApplicationInventory(home: $0).discoverApplications() }) {
+    public init(fileSystem: any FileSystem = LocalFileSystem(), discoverApplications: @escaping @Sendable (URL) -> [InstalledApplication] = { InstalledApplicationDiscoverer(home: $0).discoverApplications() }) {
         self.fileSystem = fileSystem
         self.discoverApplications = discoverApplications
     }

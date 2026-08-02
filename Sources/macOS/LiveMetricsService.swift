@@ -1,6 +1,7 @@
 import Darwin
 import Foundation
 import Metal
+import SecondWindCore
 
 public struct MemoryPopulation: Sendable {
     public let totalBytes: Int64
@@ -10,7 +11,7 @@ public struct MemoryPopulation: Sendable {
     public var usedFraction: Double { Double(usedBytes) / Double(max(1, totalBytes)) }
 }
 
-public struct LiveSystemMetrics: Sendable {
+public struct LiveSystemMetrics: Snapshot {
     public let cpuUtilization: Double?
     public let memory: MemoryPopulation
     public let gpuName: String?
@@ -25,7 +26,7 @@ public struct LiveSystemMetrics: Sendable {
 }
 
 /// A local sampler. CPU is computed from the delta between consecutive kernel CPU-tick samples.
-public final class LiveMetricsService: @unchecked Sendable {
+public final class LiveMetricsService: Service, @unchecked Sendable {
     private var previousCPUTicks: (total: UInt64, idle: UInt64)?
 
     public init() {}

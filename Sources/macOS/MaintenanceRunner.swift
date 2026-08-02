@@ -126,7 +126,7 @@ public enum MaintenanceRunnerError: LocalizedError {
     }
 }
 
-public struct LocalMaintenanceRunner: Sendable {
+public struct LocalMaintenanceRunner: Runner {
     private typealias Command = (executable: String, arguments: [String])
 
     public init() {}

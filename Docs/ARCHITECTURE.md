@@ -26,7 +26,7 @@ flowchart TB
 
     Helper["<b>Optional privileged branch</b><br/>Typed XPC request only<br/>Signed caller validation<br/>Fixed maintenance operations"]
 
-    Release["<b>Separate preview distribution branch</b><br/>Xcode build → smoke checks → app ZIP<br/>optional SHA-256 → GitHub release"]
+    Release["<b>Separate release distribution branch</b><br/>Xcode build → smoke checks → app ZIP<br/>SHA-256 → GitHub release"]
 
     Person -->|starts a local scan| Input
     Input --> Scan
@@ -40,7 +40,7 @@ flowchart TB
     Plan -->|Keep in Recovery| Recovery
     Plan -->|Move to Finder Trash| Trash
     Screens -. user-confirmed system task only .-> Helper
-    Release -. preview ZIP download only; never a runtime dependency .-> Person
+    Release -. app ZIP download only; never a runtime dependency .-> Person
 
     classDef input fill:#eceff1,stroke:#607d8b,color:#263238
     classDef workflow fill:#e3f2fd,stroke:#1565c0,color:#0d47a1
@@ -64,5 +64,5 @@ flowchart TB
   facts into review, delta, history and timeline explanations.
 - The orange cleanup branch is the only route that changes storage. It requires
   a reviewed plan and ends in local Recovery or Finder Trash.
-- The helper and preview release are isolated side branches. Normal scanning,
+- The helper and release pipeline are isolated side branches. Normal scanning,
   explanation, recovery and restore never require either one.

@@ -5,6 +5,13 @@ import Foundation
 public protocol Store: Sendable {}
 public protocol Policy: Sendable {}
 public protocol Builder: Sendable {}
+public protocol Inventory: Sendable {}
+public protocol Report: Sendable {}
+public protocol Summary: Sendable {}
+public protocol Outcome: Sendable {}
+public protocol Service: Sendable {}
+public protocol Runner: Sendable {}
+public protocol Renderer: Sendable {}
 public protocol Scanning: Sendable {}
 public protocol Validator: Sendable {}
 public protocol Verifier: Sendable {}
@@ -12,6 +19,12 @@ public protocol Resolver: Sendable {}
 public protocol Reader: Sendable {}
 public protocol Mover: Sendable {}
 public protocol Discoverer: Sendable {}
+
+/// An immutable observation captured at one point in time.
+/// Concrete snapshot families may add persistence or schema requirements.
+public protocol Snapshot: Sendable {
+    var capturedAt: Date { get }
+}
 
 /// Produces a friendly label for a real local path without changing that path.
 /// Apple's `.noindex` suffix remains part of storage and restore identities.

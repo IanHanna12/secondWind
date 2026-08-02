@@ -14,7 +14,6 @@
 		31FF3BB1E7F46789FDD777F6 /* README.md in Resources */ = {isa = PBXBuildFile; fileRef = 7100B740F322562C3293D07D /* README.md */; };
 		3A14AB5E96EB2A92929751C5 /* SystemTasksView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DFFE4BE6407EBCF314BE46C /* SystemTasksView.swift */; };
 		3E71BB7C561F48205582D33D /* SecondWindMacOS in Frameworks */ = {isa = PBXBuildFile; productRef = 1999021E85B8F7A6F10392C4 /* SecondWindMacOS */; };
-		4349DE37112AD74482BABB46 /* SettingsScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = 08FCC7B4C3CFD4F49D759A97 /* SettingsScreen.swift */; };
 		53FDA34A851503806609CD09 /* SecondWindCore in Frameworks */ = {isa = PBXBuildFile; productRef = 58366003EC745FC5EFADB355 /* SecondWindCore */; };
 		7345EE74B0922DAA3D496386 /* SecondWindApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 89AB85319746662807BB6430 /* SecondWindApp.swift */; };
 		7C64A723BD14973BB48470B5 /* SecondWindViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = A02EE0739E3691C95DC3F055 /* SecondWindViewModel.swift */; };
@@ -22,6 +21,7 @@
 		81BE2B779F95AB374E6257F0 /* DeveloperStorageScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3D8028F08624DD6E063A00EE /* DeveloperStorageScreen.swift */; };
 		8D417B481A45973A5E9D20CF /* CleanupControls.swift in Sources */ = {isa = PBXBuildFile; fileRef = ABD8A5AD7759B777A8500DEF /* CleanupControls.swift */; };
 		9123C35624733D5986D5668A /* VolumeCheckState.swift in Sources */ = {isa = PBXBuildFile; fileRef = 43A3349212D07D1A948EEF86 /* VolumeCheckState.swift */; };
+		9272AA9E5693A20732795D6B /* AboutScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = 54D836AFF1286D188597A5D2 /* AboutScreen.swift */; };
 		95AC01A6F8D14D4BAB8E2B1F /* ApplicationsScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = E1EE754FB8A0184C6FD648CA /* ApplicationsScreen.swift */; };
 		9A2A0ED2A1F14F252CD1F7F1 /* RulesScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = 645A4C2E8E5ED34AB2A99752 /* RulesScreen.swift */; };
 		9D2DE66E2156DF4A50BAA378 /* PrivilegedMaintenanceHelper.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9F1E8846F5041B569EEBB508 /* PrivilegedMaintenanceHelper.swift */; };
@@ -54,12 +54,12 @@
 
 /* Begin PBXFileReference section */
 		0898F9FE73714477CF3CD27D /* RecoveryActivityScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecoveryActivityScreen.swift; sourceTree = "<group>"; };
-		08FCC7B4C3CFD4F49D759A97 /* SettingsScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsScreen.swift; sourceTree = "<group>"; };
 		2EF6DBEF6531B5ADF3CFE7A2 /* CleanupScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CleanupScreen.swift; sourceTree = "<group>"; };
 		2F0AAA5AAAE383F695C918CC /* VolumeCheckView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VolumeCheckView.swift; sourceTree = "<group>"; };
 		384AD51372278613A7B37886 /* CleanupFindingList.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CleanupFindingList.swift; sourceTree = "<group>"; };
 		3D8028F08624DD6E063A00EE /* DeveloperStorageScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeveloperStorageScreen.swift; sourceTree = "<group>"; };
 		43A3349212D07D1A948EEF86 /* VolumeCheckState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VolumeCheckState.swift; sourceTree = "<group>"; };
+		54D836AFF1286D188597A5D2 /* AboutScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AboutScreen.swift; sourceTree = "<group>"; };
 		615B22BD3F6E6A09D20EEE77 /* SecondWind.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = SecondWind.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		645A4C2E8E5ED34AB2A99752 /* RulesScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RulesScreen.swift; sourceTree = "<group>"; };
 		7100B740F322562C3293D07D /* README.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = README.md; sourceTree = "<group>"; };
@@ -121,11 +121,11 @@
 		5047604BFAD4D5A8F5945DFE /* Features */ = {
 			isa = PBXGroup;
 			children = (
+				54D836AFF1286D188597A5D2 /* AboutScreen.swift */,
 				E1EE754FB8A0184C6FD648CA /* ApplicationsScreen.swift */,
 				AD7F403B6CED6185328D85D8 /* DashboardScreen.swift */,
 				0898F9FE73714477CF3CD27D /* RecoveryActivityScreen.swift */,
 				645A4C2E8E5ED34AB2A99752 /* RulesScreen.swift */,
-				08FCC7B4C3CFD4F49D759A97 /* SettingsScreen.swift */,
 				DE742DEDAF24183BFFF7E63B /* SystemMonitorScreen.swift */,
 				8DFFE4BE6407EBCF314BE46C /* SystemTasksView.swift */,
 				43A3349212D07D1A948EEF86 /* VolumeCheckState.swift */,
@@ -353,6 +353,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				9272AA9E5693A20732795D6B /* AboutScreen.swift in Sources */,
 				95AC01A6F8D14D4BAB8E2B1F /* ApplicationsScreen.swift in Sources */,
 				EECF2756FD4839EDBFDD821E /* ArchitectureExplorerScreen.swift in Sources */,
 				8D417B481A45973A5E9D20CF /* CleanupControls.swift in Sources */,
@@ -368,7 +369,6 @@
 				AF587961C8A585A3E5F565FB /* SecondWindRuntime.swift in Sources */,
 				A5059576AB20C08F1CDF461D /* SecondWindViewModel+Features.swift in Sources */,
 				7C64A723BD14973BB48470B5 /* SecondWindViewModel.swift in Sources */,
-				4349DE37112AD74482BABB46 /* SettingsScreen.swift in Sources */,
 				0FD51ED36DAD5B3AE0EA9733 /* SharedViews.swift in Sources */,
 				AE54A562ACB6621A4755355A /* StorageIntelligenceView.swift in Sources */,
 				F3D6927C0A1ABC2C2DD7E1B8 /* StorageOutcomePreview.swift in Sources */,
@@ -469,7 +469,7 @@
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				CODE_SIGN_STYLE = Automatic;
 				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = 10;
+				CURRENT_PROJECT_VERSION = 11;
 				DEBUG_INFORMATION_FORMAT = dwarf;
 				ENABLE_HARDENED_RUNTIME = YES;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
@@ -489,7 +489,7 @@
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				MACOSX_DEPLOYMENT_TARGET = 15.0;
-				MARKETING_VERSION = 0.9.0;
+				MARKETING_VERSION = 1.0.0;
 				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
 				MTL_FAST_MATH = YES;
 				ONLY_ACTIVE_ARCH = YES;
@@ -537,7 +537,7 @@
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				CODE_SIGN_STYLE = Automatic;
 				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = 10;
+				CURRENT_PROJECT_VERSION = 11;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				ENABLE_HARDENED_RUNTIME = YES;
 				ENABLE_NS_ASSERTIONS = NO;
@@ -551,7 +551,7 @@
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				MACOSX_DEPLOYMENT_TARGET = 15.0;
-				MARKETING_VERSION = 0.9.0;
+				MARKETING_VERSION = 1.0.0;
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
 				PRODUCT_BUNDLE_IDENTIFIER = org.secondwind.app;

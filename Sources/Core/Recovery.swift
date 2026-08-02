@@ -62,7 +62,7 @@ public enum RecoveryIntegrityStatus: Codable, Equatable, Sendable {
     case unverified
 }
 
-public struct RecoveryIntegrityReport: Sendable {
+public struct RecoveryIntegrityReport: Report {
     public let item: RecoveryItem
     public let status: RecoveryIntegrityStatus
     public let canRestore: Bool
@@ -89,7 +89,7 @@ public enum RecoveryBatchAction: String, Sendable {
     case permanentDelete
 }
 
-public enum RecoveryItemActionOutcome: Equatable, Sendable {
+public enum RecoveryItemActionOutcome: Equatable, Outcome {
     case completed(destinationPath: String?)
     case skipped(reason: String)
     case failed(reason: String)
@@ -111,7 +111,7 @@ public struct RecoveryItemActionResult: Equatable, Sendable, Identifiable {
 
 /// The durable activity layer records the final result of this value. It does
 /// not hide an item which could not safely be returned to Recovery.
-public struct RecoveryBatchOutcome: Equatable, Sendable {
+public struct RecoveryBatchOutcome: Equatable, Outcome {
     public let action: RecoveryBatchAction
     public let results: [RecoveryItemActionResult]
 

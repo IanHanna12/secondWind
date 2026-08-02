@@ -36,7 +36,7 @@ public struct StorageScanResult: Sendable {
 }
 
 /// A compact, UI-neutral summary of a completed scan.
-public struct StorageScanSummary: Sendable {
+public struct StorageScanSummary: Summary {
     public let completedAt: Date
     public let duration: TimeInterval
     public let findingCount: Int
@@ -60,12 +60,12 @@ public struct StorageScanSummary: Sendable {
 
 /// The app-facing scan contract. It adapts the canonical scan run into the
 /// completed read model; it never starts a second discovery or inventory pass.
-public protocol StorageScanning: Scanning {
+public protocol StorageScanning: Scanning, Service {
     func scan(_ request: StorageScanRequest) -> AsyncStream<StorageScanEvent>
 }
 
 /// Builds the UI read model from the single provider-backed scan run.
-public struct LocalStorageScanService: StorageScanning, Sendable {
+public struct LocalStorageScanService: StorageScanning {
     private let scanRunner: any ScanRunner
     private let snapshotService: StorageSnapshotService
 

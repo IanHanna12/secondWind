@@ -36,6 +36,15 @@ public struct RulePolicy: Codable, Policy {
     }
 }
 
+/// A user intention that changes the locally stored rule policy. Callers do
+/// not construct and replace the complete durable document.
+public enum RulePolicyChange: Sendable {
+    case builtInRule(id: String, enabled: Bool)
+    case addUserRule(title: String, route: SafeCleanupRoute, explanation: String)
+    case userRule(id: UUID, enabled: Bool)
+    case removeUserRules(ids: Set<UUID>)
+}
+
 /// Internal safety policy for cleanup execution. User rules can identify
 /// candidates, but cannot broaden these deletion boundaries.
 public struct DeletionPolicy: Policy {
@@ -46,7 +55,12 @@ public struct DeletionPolicy: Policy {
         destination: PlanDestination,
         home: URL
     ) -> Bool {
-        permits(
+        if finding.ruleID == "orphaned-application-storage" {
+            return finding.supportedAction == .cleanup &&
+                destination != .systemTask &&
+                OrphanedApplicationStoragePolicy.permitsCleanup(path: finding.path, home: home)
+        }
+        return permits(
             path: finding.path,
             action: finding.supportedAction,
             destination: destination,
@@ -59,7 +73,12 @@ public struct DeletionPolicy: Policy {
         destination: PlanDestination,
         home: URL
     ) -> Bool {
-        permits(
+        if action.ruleID == "orphaned-application-storage" {
+            return action.action == .cleanup &&
+                destination != .systemTask &&
+                OrphanedApplicationStoragePolicy.permitsCleanup(path: action.sourcePath, home: home)
+        }
+        return permits(
             path: action.sourcePath,
             action: action.action,
             destination: destination,

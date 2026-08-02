@@ -1,5 +1,6 @@
 import Foundation
 import Darwin
+import SecondWindCore
 
 public struct ProcessUsage: Identifiable, Hashable, Sendable {
     public let pid: Int
@@ -10,7 +11,7 @@ public struct ProcessUsage: Identifiable, Hashable, Sendable {
     public var id: Int { pid }
 }
 
-public struct DashboardSnapshot: Sendable {
+public struct DashboardSnapshot: Snapshot {
     public let storageTotal: Int64
     public let storageAvailable: Int64
     public let physicalMemory: UInt64
@@ -22,7 +23,7 @@ public struct DashboardSnapshot: Sendable {
     public var storageUsed: Int64 { max(0, storageTotal - storageAvailable) }
 }
 
-public struct MonitorService: Sendable {
+public struct MonitorService: Service {
     public init() {}
 
     public func snapshot(includeProcesses: Bool = false) -> DashboardSnapshot {

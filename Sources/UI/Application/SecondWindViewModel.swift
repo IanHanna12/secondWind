@@ -45,14 +45,13 @@ struct CleanupCompletion {
     var storageSnapshots = StorageSnapshotReport.empty
     var latestScanSummary: StorageScanSummary?
     var rulePolicy: RulePolicy
-    var menuMonitor = UserDefaults.standard.bool(forKey: "menuBarMonitorEnabled")
+    var rulePolicyLoadError: String?
     let runtime: SecondWindRuntime
     var home: URL { runtime.home }
     var localStore: LocalDataStore { runtime.store }
     var monitorService: MonitorService { runtime.monitor }
     var liveMetricsService: LiveMetricsService { runtime.liveMetrics }
     var applicationInventoryBuilder: ApplicationInventoryBuilder { runtime.applicationInventory }
-    var preferenceService: PreferenceService { runtime.preferences }
     var operationCoordinator: any OperationCoordinator { runtime.operationCoordinator }
     var workflows: SecondWindWorkflows { runtime.workflows }
     var scanTask: Task<Void, Never>?
@@ -66,7 +65,13 @@ struct CleanupCompletion {
         self.runtime = runtime
         self.snapshot = runtime.monitor.snapshot()
         self.auditRecords = runtime.store.audit.records()
-        self.rulePolicy = runtime.store.rulePolicy.policy()
+        do {
+            self.rulePolicy = try runtime.store.rulePolicy.load()
+            self.rulePolicyLoadError = nil
+        } catch {
+            self.rulePolicy = .init()
+            self.rulePolicyLoadError = error.localizedDescription
+        }
         let storedRecoveryItems = runtime.store.recovery.allItems()
         self.recoveryItems = storedRecoveryItems
         self.recoveryIntegrityReports = Dictionary(

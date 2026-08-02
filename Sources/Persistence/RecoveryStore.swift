@@ -67,7 +67,7 @@ public struct RecoveryStore: RecoveryStoring, RecoveryContextStoring, @unchecked
         }
 
         return itemFolders
-            .compactMap(readManifest(in:))
+            .compactMap(readRecoveryItem(in:))
             .sorted { $0.createdAt > $1.createdAt }
     }
 
@@ -86,7 +86,7 @@ public struct RecoveryStore: RecoveryStoring, RecoveryContextStoring, @unchecked
             }
             let manifestURL = payloadURL.deletingLastPathComponent().deletingLastPathComponent().appendingPathComponent("manifest.json")
             guard let manifestData = try? Data(contentsOf: manifestURL),
-                  let manifest = try? JSONDecoder.secondWind.decode(RecoveryItem.self, from: manifestData),
+                  let manifest = try? decodeManifest(manifestData),
                   manifest.id == item.id,
                   manifest.recoveryPath == item.recoveryPath else {
                 return .init(item: item, status: .damaged(reason: "The Recovery manifest is missing or does not match its payload."), canRestore: false)
@@ -143,7 +143,12 @@ public struct RecoveryStore: RecoveryStoring, RecoveryContextStoring, @unchecked
             case .anotherDestination:
                 throw RecoveryError.restoreDestinationConflict
             case .replaceAfterDestructiveConfirmation:
-                try fileManager.removeItem(at: restoreDestination)
+                try replaceExistingItem(
+                    at: restoreDestination,
+                    withRecoveryPayloadAt: payloadURL
+                )
+                try? fileManager.removeItem(at: payloadURL.deletingLastPathComponent().deletingLastPathComponent())
+                return restoreDestination
             }
         }
 
@@ -286,28 +291,25 @@ public struct RecoveryStore: RecoveryStoring, RecoveryContextStoring, @unchecked
         return .init(action: .permanentDelete, results: results)
     }
 
-    /// A manifest describes a payload created by this store; it must never be
-    /// allowed to turn `restore` into a move operation for an arbitrary path.
+    /// A Recovery item may be shown even when its manifest is damaged. Payload
+    /// containment therefore relies only on the store-owned item folder and a
+    /// direct child of its payload folder, never on manifest-controlled paths.
     private func validatedRecoveryPayloadURL(for item: RecoveryItem) throws -> URL {
-        guard item.originalPath.hasPrefix("/") else { throw RecoveryError.invalidItem }
-        let originalURL = URL(fileURLWithPath: item.originalPath).standardizedFileURL
-        guard !originalURL.lastPathComponent.isEmpty, originalURL.lastPathComponent != "/" else {
-            throw RecoveryError.invalidItem
-        }
-
-        let expected = root
+        let expectedPayloadFolder = root
             .standardizedFileURL
             .appendingPathComponent(item.id.uuidString, isDirectory: true)
             .appendingPathComponent("payload", isDirectory: true)
-            .appendingPathComponent(originalURL.lastPathComponent)
             .standardizedFileURL
         let supplied = URL(fileURLWithPath: item.recoveryPath).standardizedFileURL
-        guard supplied == expected else { throw RecoveryError.invalidItem }
+        guard supplied.deletingLastPathComponent() == expectedPayloadFolder,
+              !supplied.lastPathComponent.isEmpty else {
+            throw RecoveryError.invalidItem
+        }
         return supplied
     }
 
     private func restoreDestination(for item: RecoveryItem, choice: RestoreConflictChoice) throws -> URL {
-        let originalDestination = URL(fileURLWithPath: item.originalPath).standardizedFileURL
+        let originalDestination = try validatedOriginalURL(for: item)
         switch choice {
         case .cancel:
             throw RecoveryError.restoreDestinationConflict
@@ -327,6 +329,15 @@ public struct RecoveryStore: RecoveryStoring, RecoveryContextStoring, @unchecked
             // operation after the UI's destructive confirmation.
             throw RecoveryError.restoreDestinationConflict
         }
+    }
+
+    private func validatedOriginalURL(for item: RecoveryItem) throws -> URL {
+        guard item.originalPath.hasPrefix("/") else { throw RecoveryError.invalidItem }
+        let originalURL = URL(fileURLWithPath: item.originalPath).standardizedFileURL
+        guard !originalURL.lastPathComponent.isEmpty, originalURL.lastPathComponent != "/" else {
+            throw RecoveryError.invalidItem
+        }
+        return originalURL
     }
 
     private func rollbackRestore(
@@ -364,18 +375,90 @@ public struct RecoveryStore: RecoveryStoring, RecoveryContextStoring, @unchecked
         return items.filter { processedItemIDs.insert($0.id).inserted }
     }
 
+    /// Replaces an explicitly confirmed restore conflict without first
+    /// discarding the item that is already at the destination. If placing the
+    /// Recovery payload fails, the existing item is returned to its original
+    /// location before the error reaches the caller.
+    private func replaceExistingItem(
+        at destination: URL,
+        withRecoveryPayloadAt payload: URL
+    ) throws {
+        let backup = replacementBackupURL(for: destination)
+        try fileManager.moveItem(at: destination, to: backup)
+
+        do {
+            try fileManager.moveItem(at: payload, to: destination)
+        } catch {
+            try restoreReplacementBackup(from: backup, to: destination)
+            throw error
+        }
+
+        // The replacement is complete only after the explicitly discarded
+        // item has been removed. If this cleanup fails, keep the backup rather
+        // than risking either item; the caller receives the failure.
+        do {
+            try fileManager.removeItem(at: backup)
+        } catch {
+            throw error
+        }
+    }
+
+    private func replacementBackupURL(for destination: URL) -> URL {
+        destination.deletingLastPathComponent().appendingPathComponent(
+            ".secondwind-replacement-backup-\(UUID().uuidString)-\(destination.lastPathComponent)"
+        )
+    }
+
+    private func restoreReplacementBackup(from backup: URL, to destination: URL) throws {
+        guard !fileManager.fileExists(atPath: destination.path) else {
+            throw RecoveryError.restoreDestinationConflict
+        }
+        try fileManager.moveItem(at: backup, to: destination)
+    }
+
     private func writeManifest(_ recoveryItem: RecoveryItem, in recoveryItemFolder: URL) throws {
         let manifestURL = recoveryItemFolder.appendingPathComponent("manifest.json")
-        let data = try JSONEncoder.secondWind.encode(recoveryItem)
+        let data = try PersistenceDocumentCodec.encode(recoveryItem)
         try data.write(to: manifestURL, options: .atomic)
     }
 
-    private func readManifest(in recoveryItemFolder: URL) -> RecoveryItem? {
+    private func readRecoveryItem(in recoveryItemFolder: URL) -> RecoveryItem? {
         let manifestURL = recoveryItemFolder.appendingPathComponent("manifest.json")
-        guard let data = try? Data(contentsOf: manifestURL) else {
+        if let data = try? Data(contentsOf: manifestURL),
+           let item = try? decodeManifest(data) {
+            return item
+        }
+        return damagedRecoveryItem(in: recoveryItemFolder)
+    }
+
+    private func damagedRecoveryItem(in recoveryItemFolder: URL) -> RecoveryItem? {
+        guard let itemID = UUID(uuidString: recoveryItemFolder.lastPathComponent) else { return nil }
+        let payloadFolder = recoveryItemFolder.appendingPathComponent("payload", isDirectory: true)
+        guard let payloads = try? fileManager.contentsOfDirectory(
+            at: payloadFolder,
+            includingPropertiesForKeys: [.creationDateKey]
+        ), payloads.count == 1, let payloadURL = payloads.first else {
             return nil
         }
-        return try? JSONDecoder.secondWind.decode(RecoveryItem.self, from: data)
+        let createdAt = (try? recoveryItemFolder.resourceValues(forKeys: [.creationDateKey]).creationDate) ?? Date.distantPast
+        return RecoveryItem(
+            id: itemID,
+            planID: itemID,
+            originalPath: "Original location unavailable",
+            recoveryPath: payloadURL.standardizedFileURL.path,
+            createdAt: createdAt,
+            byteSize: LocalFileSystem(fileManager: fileManager).logicalSize(at: payloadURL)
+        )
+    }
+
+    private func decodeManifest(_ data: Data) throws -> RecoveryItem {
+        try PersistenceDocumentCodec.decode(
+            RecoveryItem.self,
+            from: data,
+            documentName: "Recovery manifest"
+        ) {
+            try JSONDecoder.secondWind.decode(RecoveryItem.self, from: data)
+        }
     }
 
     /// Preserve the original name whenever possible. A collision gets a

@@ -26,7 +26,22 @@ final class ObservabilityTests: XCTestCase {
 
         XCTAssertFalse(text.contains("/Users/"))
         XCTAssertFalse(text.contains("recovery-path"))
+        XCTAssertTrue(text.contains("\"schemaVersion\":1"))
         XCTAssertTrue(text.contains("developer_storage"))
+    }
+
+    func testEveryJSONEndpointDeclaresTheStableSchemaVersion() throws {
+        let renderer = DefaultObservabilityJSONRenderer()
+        let responses = [
+            try renderer.health(snapshot: sampleSnapshot()),
+            try renderer.summary(snapshot: sampleSnapshot()),
+            try renderer.latestDelta(snapshot: sampleSnapshot())
+        ]
+
+        for response in responses {
+            let object = try XCTUnwrap(JSONSerialization.jsonObject(with: response) as? [String: Any])
+            XCTAssertEqual(object["schemaVersion"] as? Int, LocalObservabilitySnapshot.currentSchemaVersion)
+        }
     }
 
     func testSnapshotStoreReplacesTheWholeSnapshot() async {
@@ -47,6 +62,12 @@ final class ObservabilityTests: XCTestCase {
         let served = await store.snapshot()
         XCTAssertEqual(served?.inventory.observedBytes, 8_192)
         XCTAssertEqual(served?.inventory.entryCount, 2)
+    }
+
+    func testObservabilitySnapshotUsesItsGenerationTimeAsCaptureTime() {
+        let snapshot = sampleSnapshot()
+
+        XCTAssertEqual(snapshot.capturedAt, snapshot.generatedAt)
     }
 
     func testPrometheusSnapshotFileContainsOnlyRenderedAggregateData() throws {

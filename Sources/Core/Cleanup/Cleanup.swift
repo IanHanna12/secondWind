@@ -182,7 +182,7 @@ public enum PlanError: LocalizedError, Equatable {
 
 /// The explicit result of a cleanup operation. Every planned action remains
 /// represented, including skipped, failed, and not-yet-observable actions.
-public enum CleanupActionOutcome: Codable, Equatable, Sendable {
+public enum CleanupActionOutcome: Codable, Equatable, Outcome {
     case completedAndVerified
     case completedNotYetObservable
     case skipped(reason: String)
@@ -204,7 +204,7 @@ public struct CleanupActionResult: Codable, Sendable {
     }
 }
 
-public struct CleanupOutcome: Codable, Sendable {
+public struct CleanupOutcome: Codable, Outcome {
     public let operationID: OperationID
     public let plannedBytes: Int64
     public let movedBytes: Int64

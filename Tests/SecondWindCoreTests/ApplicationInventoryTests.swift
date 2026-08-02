@@ -17,8 +17,8 @@ final class ApplicationInventoryTests: XCTestCase {
         try write(Data(repeating: 3, count: 5), to: nameBasedSupport)
 
         let app = InstalledApplication(url: appURL, bundleIdentifier: "com.example.app", displayName: "Example")
-        let inventory = InstalledApplicationInventory(home: home)
-        let preview = inventory.removalPreview(for: app)
+        let discoverer = InstalledApplicationDiscoverer(home: home)
+        let preview = discoverer.removalPreview(for: app)
         let fileSystem = LocalFileSystem()
         let applicationBytes = fileSystem.allocatedSize(at: appURL)
         let exactSupportBytes = fileSystem.allocatedSize(at: exactSupport.deletingLastPathComponent())
@@ -33,7 +33,7 @@ final class ApplicationInventoryTests: XCTestCase {
         XCTAssertEqual(preview.protectedRemnants.first?.kind, .nameMatch)
         XCTAssertEqual(preview.removableBytes, applicationBytes + exactSupportBytes)
 
-        let findings = inventory.uninstallFindings(for: app)
+        let findings = discoverer.uninstallFindings(for: app)
         XCTAssertEqual(findings.filter { $0.supportedAction == .uninstall }.count, 2)
         XCTAssertEqual(findings.first { $0.path == nameBasedSupport.deletingLastPathComponent().path }?.risk, .protected)
         XCTAssertTrue(findings.allSatisfy { $0.category == .applications })
@@ -121,6 +121,30 @@ final class ApplicationInventoryTests: XCTestCase {
             applications: []
         )
         XCTAssertEqual(inventory.entries.first?.applicationAssociations.first?.evidence, .possibleOrphan)
+    }
+
+    func testDiscoveryProtectsAppleAndDataBearingPossibleOrphans() throws {
+        let root = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        defer { try? FileManager.default.removeItem(at: root) }
+
+        let appleCache = root.appendingPathComponent("Library/Caches/com.apple.example/cache.bin")
+        let thirdPartyContainer = root.appendingPathComponent("Library/Containers/com.example.legacy/data.bin")
+        try write(Data(repeating: 1, count: 128), to: appleCache)
+        try write(Data(repeating: 2, count: 128), to: thirdPartyContainer)
+
+        let discovery = ApplicationStorageDiscovery(home: root)
+        let entries = discovery.inventoryEntries(for: [])
+        let appleEntry = try XCTUnwrap(entries.first { $0.path == appleCache.deletingLastPathComponent().path })
+        let containerEntry = try XCTUnwrap(entries.first { $0.path == thirdPartyContainer.deletingLastPathComponent().path })
+
+        XCTAssertEqual(appleEntry.risk, .protected)
+        XCTAssertFalse(appleEntry.isActionable)
+        XCTAssertEqual(containerEntry.risk, .protected)
+        XCTAssertFalse(containerEntry.isActionable)
+
+        let cleanupPaths = Set(discovery.orphanCleanupFindings(for: []).map(\.path))
+        XCTAssertFalse(cleanupPaths.contains(try XCTUnwrap(appleEntry.path)))
+        XCTAssertFalse(cleanupPaths.contains(try XCTUnwrap(containerEntry.path)))
     }
 
     func testAllocatedSizeDoesNotUseSparseFileLogicalCapacity() throws {

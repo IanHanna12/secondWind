@@ -72,7 +72,7 @@ private enum AppSection: String, CaseIterable, Identifiable {
     case rules = "Rules"
     case volumeCheck = "Volume check"
     case systemTasks = "System tasks"
-    case settings = "Settings"
+    case about = "About"
     case activity = "Recovery & activity"
 
     var id: String { rawValue }
@@ -91,7 +91,7 @@ private enum AppSection: String, CaseIterable, Identifiable {
         case .rules: return "checklist"
         case .volumeCheck: return "externaldrive.badge.checkmark"
         case .systemTasks: return "wrench.and.screwdriver"
-        case .settings: return "gearshape"
+        case .about: return "info.circle"
         case .activity: return "clock.arrow.circlepath"
         }
     }
@@ -160,7 +160,7 @@ private struct SecondWindApplicationView: View {
             Section("SYSTEM") {
                 sidebarItem(.volumeCheck)
                 sidebarItem(.systemTasks)
-                sidebarItem(.settings)
+                sidebarItem(.about)
             }
         }
         .listStyle(.sidebar)
@@ -213,8 +213,8 @@ private struct SecondWindApplicationView: View {
             VolumeCheckScreen(model: model)
         case .systemTasks:
             SystemTasksScreen(model: model)
-        case .settings:
-            SettingsScreen(model: model)
+        case .about:
+            AboutScreen()
         case .activity:
             RecoveryActivityScreen(model: model)
         }

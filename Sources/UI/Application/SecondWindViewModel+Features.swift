@@ -99,7 +99,7 @@ extension SecondWindViewModel {
     // MARK: Applications
 
     func loadApplications() {
-        applications = InstalledApplicationInventory(home: home).applications()
+        applications = InstalledApplicationDiscoverer(home: home).applications()
         applicationStorage = applicationInventoryBuilder.build(
             storageInventory: storageInventory,
             applications: applications
@@ -128,7 +128,7 @@ extension SecondWindViewModel {
         let home = home
         Task { [weak self, app, home] in
             let preview = await Task.detached {
-                InstalledApplicationInventory(home: home).removalPreview(for: app)
+                InstalledApplicationDiscoverer(home: home).removalPreview(for: app)
             }.value
             guard self?.inspectedApplicationID == app.id else { return }
             self?.applicationPreview = preview
@@ -137,7 +137,7 @@ extension SecondWindViewModel {
     }
 
     func prepareUninstall(_ app: InstalledApplication) {
-        let candidates = InstalledApplicationInventory(home: home).uninstallFindings(for: app)
+        let candidates = InstalledApplicationDiscoverer(home: home).uninstallFindings(for: app)
         replaceFindings(candidates)
         selectFindings(Set(candidates
             .filter { $0.risk.isExecutable && $0.supportedAction == .uninstall }
@@ -322,14 +322,18 @@ extension SecondWindViewModel {
 
     // MARK: System activity and preferences
 
-    func saveRulePolicy(_ policy: RulePolicy) {
+    @discardableResult
+    func applyRulePolicyChange(_ change: RulePolicyChange) -> RulePolicy? {
         do {
-            try localStore.rulePolicy.save(policy)
-            rulePolicy = policy
+            let updatedPolicy = try localStore.rulePolicy.apply(change)
+            rulePolicy = updatedPolicy
+            rulePolicyLoadError = nil
             try? localStore.audit.append(.init(kind: .preference, ruleVersions: ["local rule policy"], paths: [], bytes: 0, result: "updated"))
             refreshActivity()
+            return updatedPolicy
         } catch {
             message = error.localizedDescription
+            return nil
         }
     }
 
@@ -346,22 +350,6 @@ extension SecondWindViewModel {
             record = (.failure, "failed: \(error.localizedDescription)")
         }
         appendMaintenanceRecord(kind: record.kind, task: task, volume: volume, result: record.result)
-    }
-
-    func setPreference(_ preference: SystemPreference, enabled: Bool) {
-        preferenceService.set(preference, enabled: enabled)
-        appendPreferenceRecord(preference.rawValue, result: enabled ? "enabled" : "disabled")
-    }
-
-    func resetPreference(_ preference: SystemPreference) {
-        preferenceService.reset(preference)
-        appendPreferenceRecord(preference.rawValue, result: "reset to macOS default")
-    }
-
-    func setMenuMonitor(enabled: Bool) {
-        menuMonitor = enabled
-        UserDefaults.standard.set(enabled, forKey: "menuBarMonitorEnabled")
-        appendPreferenceRecord("menuBarMonitor", result: enabled ? "enabled" : "disabled")
     }
 
     func exportAudit(_ format: AuditExportFormat) {
@@ -393,11 +381,6 @@ extension SecondWindViewModel {
 
     private func appendMaintenanceRecord(kind: AuditKind, task: MaintenanceTask, volume: VolumeReference?, result: String) {
         try? localStore.audit.append(.init(kind: kind, ruleVersions: [task.rawValue], paths: [volume?.url.path ?? "/"], bytes: 0, destination: .systemTask, result: result))
-        refreshActivity()
-    }
-
-    private func appendPreferenceRecord(_ identifier: String, result: String) {
-        try? localStore.audit.append(.init(kind: .preference, ruleVersions: [identifier], paths: [], bytes: 0, result: result))
         refreshActivity()
     }
 

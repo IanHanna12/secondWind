@@ -76,6 +76,11 @@ All endpoints are read-only. Unknown paths return `404`; non-`GET` requests
 return `405`. If Second Wind has not saved a snapshot yet, `/health` reports
 `waiting_for_snapshot` and the data endpoints return `503`.
 
+Every JSON response declares `schemaVersion: 1`. During the Second Wind v1.x
+line, existing JSON API v1 fields and published `secondwind_*` Prometheus metric
+names are not removed or renamed incompatibly. Optional fields and bounded
+metrics may be added. See the [stability contract](../Docs/STABILITY.md).
+
 ## Privacy boundary
 
 The exported snapshot never contains:

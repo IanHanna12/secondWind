@@ -18,7 +18,7 @@ public protocol OperationCoordinator: Coordinator {
 
 /// Runs one provider-backed scan. Operation admission, cancellation, and
 /// progress remain the responsibility of OperationCoordinator.
-public protocol ScanRunner: Sendable {
+public protocol ScanRunner: Runner {
     func scan(_ request: StorageScanRequest) -> AsyncStream<ScanRunEvent>
 }
 

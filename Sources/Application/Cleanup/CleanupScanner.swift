@@ -86,7 +86,7 @@ public struct CleanupScanner: Scanning {
     }
 }
 
-public enum ScanOutcome: Sendable {
+public enum ScanOutcome: Outcome {
     case completed([Finding])
     case cancelled
 

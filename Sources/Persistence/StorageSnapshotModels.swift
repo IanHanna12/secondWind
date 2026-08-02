@@ -4,7 +4,7 @@ import SecondWindCore
 /// An immutable local copy of the current storage inventory. It intentionally
 /// records only locations Second Wind explicitly understands, never a complete
 /// index of a person's files.
-public struct StorageSnapshot: Codable, Hashable, Identifiable, Sendable {
+public struct StorageSnapshot: Codable, Hashable, Identifiable, Snapshot {
     public let id: UUID
     public let capturedAt: Date
     public let totalBytes: Int64
@@ -132,7 +132,7 @@ public struct StorageChange: Codable, Hashable, Identifiable, Sendable {
     }
 }
 
-public struct StorageSnapshotReport: Sendable {
+public struct StorageSnapshotReport: Report {
     public let current: StorageSnapshot?
     public let previous: StorageSnapshot?
     public let history: [StorageSnapshot]
@@ -236,7 +236,7 @@ public struct StorageSnapshotReport: Sendable {
     }
 }
 
-public struct StorageCategorySummary: Identifiable, Sendable {
+public struct StorageCategorySummary: Identifiable, Summary {
     public let category: StorageCategory
     public let byteSize: Int64
     public let entryCount: Int

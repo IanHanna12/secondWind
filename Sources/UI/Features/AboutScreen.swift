@@ -1,28 +1,8 @@
 import SwiftUI
-import SecondWindMacOS
 
-struct SettingsScreen: View {
-    let model: SecondWindViewModel
-    private let preferenceService = PreferenceService()
-
+struct AboutScreen: View {
     var body: some View {
         Form {
-            Section("Finder and Dock") {
-                ForEach(SystemPreference.allCases) { preference in
-                    HStack {
-                        Toggle(preference.rawValue, isOn: Binding(get: { preferenceService.value(preference) ?? false }, set: { model.setPreference(preference, enabled: $0) }))
-                            .disabled(!preferenceService.isSupported(preference))
-                        VStack(alignment: .leading) {
-                            Text(preference.explanation).font(.caption).foregroundStyle(.secondary)
-                            Button("Reset to macOS default") { model.resetPreference(preference) }.font(.caption)
-                        }
-                    }
-                }
-            }
-            Section("Menu bar") {
-                Toggle("Enable menu-bar readout", isOn: Binding(get: { model.menuMonitor }, set: { model.setMenuMonitor(enabled: $0) }))
-                Text("The menu-bar monitor is opt-in and performs no network activity.").font(.caption).foregroundStyle(.secondary)
-            }
             Section("Version and build") {
                 LabeledContent("App version") {
                     Text(BuildIdentity.current.versionDescription)
@@ -38,13 +18,13 @@ struct SettingsScreen: View {
                     Text(BuildIdentity.current.buildDateDescription)
                         .textSelection(.enabled)
                 }
-                Text("The app version describes this development stage. The source revision identifies the exact local source used to build it. Second Wind does not check for updates.")
+                Text("Second Wind does not check for updates or send remote telemetry.")
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
         }
         .padding(28)
-        .navigationTitle("Settings")
+        .navigationTitle("About")
     }
 }
 

@@ -2,7 +2,7 @@ import Foundation
 
 /// A read-only account of storage locations Second Wind explicitly understands.
 /// It is the current source of truth for cleanup, storage views, and snapshots.
-public struct StorageInventory: Sendable {
+public struct StorageInventory: Inventory {
     public let capturedAt: Date
     public let entries: [StorageInventoryEntry]
 

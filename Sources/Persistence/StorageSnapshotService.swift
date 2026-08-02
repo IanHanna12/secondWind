@@ -3,7 +3,7 @@ import SecondWindCore
 
 /// Captures known storage findings and compares each snapshot with its previous
 /// local snapshot.
-public struct StorageSnapshotService: Sendable {
+public struct StorageSnapshotService: Service {
     public let store: StorageSnapshotStore
 
     public init(store: StorageSnapshotStore = StorageSnapshotStore()) {

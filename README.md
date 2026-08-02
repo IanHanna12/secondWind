@@ -7,19 +7,19 @@ candidates and making deliberate storage changes. It is independently
 implemented and has no remote telemetry, analytics, cloud sync, remote rule downloads,
 or update checks.
 
-> **0.9.0 Preview** — Second Wind is an early, locally distributed preview.
-> Its core cleanup, audit, Recovery, and storage-change flows are implemented,
-> but interfaces, rules, and stored formats may still change incompatibly.
-> Preview downloads are not notarized and macOS may require an explicit
-> confirmation before opening them.
+> **1.0.0 Stable Foundation** — The reviewed cleanup workflow, Recovery model,
+> local history, persistence schemas, Prometheus metrics, and JSON API v1 now
+> have an explicit compatibility contract. Downloads are currently ad-hoc
+> signed and not notarized, so macOS may require **Open Anyway** on first launch.
 
 Second Wind is intentionally conservative. It only acts on locations it
 explicitly understands. Unknown or ambiguous data is left untouched rather
 than guessed at.
 
-> **Latest update · 30 July 2026** The source flow is now easier to follow, and
-> an optional standalone, loopback-only observability companion can expose
-> aggregate local history to Prometheus and Grafana without changing the app.
+> **Latest update · 2 August 2026** Second Wind 1.0 establishes versioned local
+> formats, migration safeguards, stable observability responses, documented
+> installation, and a reproducible release archive without adding another
+> storage or cleanup subsystem.
 > Read the [update history](UPDATES.md).
 
 Read the project's [philosophy](PHILOSOPHY.md) for the principles behind those
@@ -60,8 +60,12 @@ Copyright © 2026 Ian Hanna. Second Wind is licensed under
 
 ## Quick start
 
-Second Wind requires macOS 15 or later and Xcode or the Xcode Command Line
-Tools.
+Download `Second-Wind-1.0.0.zip` from GitHub Releases, verify it against
+`SHA256SUMS`, move **Second Wind.app** to `/Applications`, and follow the
+[installation guide](Docs/INSTALLATION.md). Second Wind requires macOS 15 or
+later.
+
+To build the current source instead:
 
 ```bash
 git clone https://github.com/IanHanna12/secondWind.git
@@ -70,6 +74,9 @@ cd secondWind
 ```
 
 This launches the standard app without the optional privileged helper enabled.
+
+The [v1 stability contract](Docs/STABILITY.md) documents persistence, API,
+migration, upgrading, uninstalling, limitations, and best-effort support.
 
 ## What it helps with
 
@@ -80,8 +87,9 @@ This launches the standard app without the optional privileged helper enabled.
   caches, logs, and Recovery storage without presenting them as automatic
   cleanup targets.
 - Inspect installed apps, their exact known support paths, and possible
-  identifier-based orphaned data. Exact identifier paths require review before
-  they can enter the normal cleanup plan; ambiguous paths remain protected.
+  identifier-based orphaned data. Only exact third-party cache and log paths
+  can enter the reviewed cleanup plan; Apple-owned identifiers and data-bearing
+  locations remain protected.
 - Check a validated local volume with macOS's read-only verification.
 
 ## Storage intelligence
@@ -102,11 +110,12 @@ Applications is a read-only projection of that same inventory: it separates an
 application bundle from its known related storage, such as support data, caches,
 logs, preferences, containers, and developer data. Each relationship includes
 its path and association reason. Exact bundle-identifier paths can be shown as
-possible orphaned data when the corresponding application is not installed;
-they require review before they can enter the normal cleanup plan. Name
-matches, ambiguous paths, shared resources, and unknown locations remain
-protected. Application-specific selection only adds existing, eligible findings
-to the normal review, confirmation, Trash, or Recovery flow.
+possible orphaned data when the corresponding application is not installed.
+Only third-party cache and log paths may enter the normal reviewed cleanup
+plan; Apple-owned identifiers, Application Support, Containers, Preferences,
+saved state, name matches, ambiguous paths, shared resources, and unknown
+locations remain protected. Application-specific selection only adds existing,
+eligible findings to the normal review, confirmation, Trash, or Recovery flow.
 
 ## Guarantees and limits
 

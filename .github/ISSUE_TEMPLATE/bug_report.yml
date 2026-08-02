@@ -1,0 +1,47 @@
+name: Bug report
+description: Report reproducible incorrect or unsafe behavior
+title: "Bug: "
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: Do not include full paths, user names, Recovery references, manifests, or diagnostic exports.
+  - type: input
+    id: version
+    attributes:
+      label: Second Wind version
+      placeholder: 1.0.0 and the revision shown in Settings
+    validations:
+      required: true
+  - type: input
+    id: macos
+    attributes:
+      label: macOS version
+    validations:
+      required: true
+  - type: textarea
+    id: behavior
+    attributes:
+      label: What happened?
+      description: Describe the visible result using redacted paths.
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Reproduction steps
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: What did you expect?
+    validations:
+      required: true
+  - type: checkboxes
+    id: privacy
+    attributes:
+      label: Privacy check
+      options:
+        - label: I removed full paths, user names, Recovery references, and private diagnostic data.
+          required: true

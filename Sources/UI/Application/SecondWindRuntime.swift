@@ -19,7 +19,6 @@ struct SecondWindRuntime {
     let monitor: MonitorService
     let liveMetrics: LiveMetricsService
     let applicationInventory: ApplicationInventoryBuilder
-    let preferences: PreferenceService
 
     static func local(
         home: URL = FileManager.default.homeDirectoryForCurrentUser
@@ -39,8 +38,7 @@ struct SecondWindRuntime {
             operationCoordinator: operationCoordinator,
             monitor: MonitorService(),
             liveMetrics: LiveMetricsService(),
-            applicationInventory: ApplicationInventoryBuilder(),
-            preferences: PreferenceService()
+            applicationInventory: ApplicationInventoryBuilder()
         )
     }
 }

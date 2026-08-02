@@ -1,7 +1,21 @@
 import Foundation
+import SecondWindCore
+
+/// A schema-versioned, privacy-preserving snapshot served by Local
+/// Observability. `generatedAt` remains the public JSON field; `capturedAt`
+/// exposes the shared snapshot contract inside Swift.
+public protocol ObservabilitySnapshot: Snapshot, Codable {
+    static var currentSchemaVersion: Int { get }
+    var schemaVersion: Int { get }
+    var generatedAt: Date { get }
+}
+
+public extension ObservabilitySnapshot {
+    var capturedAt: Date { generatedAt }
+}
 
 /// Starts and stops the optional local read-only endpoint.
-public protocol LocalObservabilityServing: Sendable {
+public protocol LocalObservabilityServing: Service {
     func start() async throws
     func stop() async
 }
@@ -11,11 +25,11 @@ public protocol ObservabilitySnapshotProviding: Sendable {
     func snapshot() async -> LocalObservabilitySnapshot?
 }
 
-public protocol PrometheusMetricsRendering: Sendable {
+public protocol PrometheusMetricsRendering: Renderer {
     func render(snapshot: LocalObservabilitySnapshot) -> String
 }
 
-public protocol ObservabilityJSONRendering: Sendable {
+public protocol ObservabilityJSONRendering: Renderer {
     func health(snapshot: LocalObservabilitySnapshot?) throws -> Data
     func summary(snapshot: LocalObservabilitySnapshot) throws -> Data
     func latestDelta(snapshot: LocalObservabilitySnapshot) throws -> Data
@@ -23,7 +37,10 @@ public protocol ObservabilityJSONRendering: Sendable {
 
 /// A privacy-preserving, immutable projection of persisted Second Wind facts.
 /// It intentionally contains no paths, names, Recovery identifiers, or rules.
-public struct LocalObservabilitySnapshot: Codable, Sendable, Equatable {
+public struct LocalObservabilitySnapshot: ObservabilitySnapshot, Equatable {
+    public static let currentSchemaVersion = 1
+
+    public let schemaVersion: Int
     public let generatedAt: Date
     public let inventory: InventorySummary
     public let scan: ScanSummary
@@ -34,6 +51,7 @@ public struct LocalObservabilitySnapshot: Codable, Sendable, Equatable {
     public let applications: ApplicationSummary?
 
     public init(
+        schemaVersion: Int = LocalObservabilitySnapshot.currentSchemaVersion,
         generatedAt: Date,
         inventory: InventorySummary,
         scan: ScanSummary,
@@ -43,6 +61,7 @@ public struct LocalObservabilitySnapshot: Codable, Sendable, Equatable {
         delta: DeltaSummary,
         applications: ApplicationSummary?
     ) {
+        self.schemaVersion = schemaVersion
         self.generatedAt = generatedAt
         self.inventory = inventory
         self.scan = scan
@@ -54,7 +73,7 @@ public struct LocalObservabilitySnapshot: Codable, Sendable, Equatable {
     }
 }
 
-public struct InventorySummary: Codable, Sendable, Equatable {
+public struct InventorySummary: Codable, Equatable, Summary {
     public let observedBytes: Int64
     public let entryCount: Int
     public let cleanupEligibleEntryCount: Int
@@ -62,7 +81,7 @@ public struct InventorySummary: Codable, Sendable, Equatable {
     public let categories: [CategorySummary]
 }
 
-public struct CategorySummary: Codable, Sendable, Equatable, Identifiable {
+public struct CategorySummary: Codable, Equatable, Identifiable, Summary {
     /// A fixed Second Wind category key, not a filesystem path or user value.
     public let category: String
     public let observedBytes: Int64
@@ -71,40 +90,40 @@ public struct CategorySummary: Codable, Sendable, Equatable, Identifiable {
     public var id: String { category }
 }
 
-public struct ScanSummary: Codable, Sendable, Equatable {
+public struct ScanSummary: Codable, Equatable, Summary {
     public let lastCompletedAt: Date?
     public let completedCount: Int
     public let failedCount: Int
     public let cancelledCount: Int
 }
 
-public struct RecoverySummary: Codable, Sendable, Equatable {
+public struct RecoverySummary: Codable, Equatable, Summary {
     public let bytes: Int64
     public let itemCount: Int
     public let oldestItemAgeSeconds: TimeInterval?
 }
 
-public struct CleanupSummary: Codable, Sendable, Equatable {
+public struct CleanupSummary: Codable, Equatable, Summary {
     public let executionCount: Int
     public let completedBytes: Int64
     public let trashBytes: Int64
     public let recoveryBytes: Int64
 }
 
-public struct ProviderSummary: Codable, Sendable, Equatable {
+public struct ProviderSummary: Codable, Equatable, Summary {
     /// Counts observed provider identities without publishing their names.
     public let distinctProviderCount: Int
     public let observedEntryCount: Int
 }
 
-public struct ApplicationSummary: Codable, Sendable, Equatable {
+public struct ApplicationSummary: Codable, Equatable, Summary {
     /// Aggregate only: application identities are never exported as labels.
     public let associatedEntryCount: Int
     public let observedBytes: Int64
     public let deltaBytes: Int64
 }
 
-public struct DeltaSummary: Codable, Sendable, Equatable {
+public struct DeltaSummary: Codable, Equatable, Summary {
     public let snapshotAvailable: Bool
     public let comparedSnapshotAvailable: Bool
     public let availableStorageDeltaBytes: Int64?

@@ -5,6 +5,66 @@ import XCTest
 @testable import SecondWindPersistence
 
 final class PlanningTests: XCTestCase {
+    func testRulePolicyRejectsUnknownBuiltInRuleIdentifiers() throws {
+        let root = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        defer { try? FileManager.default.removeItem(at: root) }
+        let store = RulePolicyStore(url: root.appendingPathComponent("rules.json"))
+        let policy = RulePolicy(disabledBuiltInRuleIDs: ["unknown-rule"])
+
+        XCTAssertThrowsError(try store.validate(policy)) { error in
+            XCTAssertEqual(error as? RulePolicyError, .unknownBuiltInRule("unknown-rule"))
+        }
+        XCTAssertFalse(FileManager.default.fileExists(atPath: store.url.path))
+    }
+
+    func testUnsupportedFutureRulePolicyIsNotOverwritten() throws {
+        let root = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        defer { try? FileManager.default.removeItem(at: root) }
+        let url = root.appendingPathComponent("rules.json")
+        try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
+        let futureDocument = Data("{\"schemaVersion\":999,\"disabledBuiltInRuleIDs\":[],\"userRules\":[]}".utf8)
+        try futureDocument.write(to: url)
+        let store = RulePolicyStore(url: url)
+
+        XCTAssertThrowsError(try store.apply(.builtInRule(id: BuiltInRules.all[0].id, enabled: false)))
+        XCTAssertEqual(try Data(contentsOf: url), futureDocument)
+        XCTAssertTrue(store.policy().userRules.isEmpty)
+    }
+
+    func testRulePolicyChangesUseTheCurrentStoredPolicy() throws {
+        let root = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        defer { try? FileManager.default.removeItem(at: root) }
+        let store = RulePolicyStore(url: root.appendingPathComponent("rules.json"))
+
+        let policyWithRule = try store.apply(
+            .addUserRule(
+                title: "Local cache",
+                route: .userCaches,
+                explanation: "A locally generated cache."
+            )
+        )
+        let ruleID = try XCTUnwrap(policyWithRule.userRules.first?.id)
+
+        let updatedPolicy = try store.apply(.userRule(id: ruleID, enabled: false))
+
+        XCTAssertEqual(updatedPolicy.userRules.count, 1)
+        XCTAssertEqual(updatedPolicy.userRules.first?.id, ruleID)
+        XCTAssertEqual(updatedPolicy.userRules.first?.isEnabled, false)
+        XCTAssertEqual(try store.load().userRules, updatedPolicy.userRules)
+    }
+
+    func testRulePolicyChangeRejectsMissingUserRule() throws {
+        let root = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        defer { try? FileManager.default.removeItem(at: root) }
+        let store = RulePolicyStore(url: root.appendingPathComponent("rules.json"))
+        let missingRuleID = UUID()
+
+        XCTAssertThrowsError(try store.apply(.userRule(id: missingRuleID, enabled: false))) { error in
+            XCTAssertEqual(error as? RulePolicyError, .unknownUserRule(missingRuleID))
+        }
+        XCTAssertFalse(FileManager.default.fileExists(atPath: store.url.path))
+    }
+
     func testLegacyRecoveryDestinationDecodesAsRecovery() throws {
         let destination = try JSONDecoder().decode(PlanDestination.self, from: Data("\"quarantine\"".utf8))
         XCTAssertEqual(destination, .recovery)
@@ -64,7 +124,7 @@ final class PlanningTests: XCTestCase {
         XCTAssertEqual(plan.actions.map(\.sourcePath), [app.path])
     }
 
-    func testReviewedOrphanedApplicationStorageCanEnterEitherCleanupPlan() throws {
+    func testReviewedOrphanedApplicationContainerCannotEnterCleanupPlan() throws {
         let home = URL(fileURLWithPath: "/fixture-home")
         let orphan = Finding(
             ruleID: "orphaned-application-storage",
@@ -80,14 +140,52 @@ final class PlanningTests: XCTestCase {
             confidence: .needsUserReview
         )
 
-        for destination in [PlanDestination.recovery, .finderTrash] {
-            let plan = try PlanBuilder(home: home).makePlan(
-                findings: [orphan],
-                selectedIDs: [orphan.id],
-                destination: destination
-            )
-            XCTAssertEqual(plan.actions.map(\.sourcePath), [orphan.path])
-        }
+        XCTAssertThrowsError(try PlanBuilder(home: home).makePlan(
+            findings: [orphan],
+            selectedIDs: [orphan.id],
+            destination: .recovery
+        ))
+    }
+
+    func testOnlyThirdPartyOrphanCachesAndLogsCanEnterCleanupPlans() throws {
+        let home = URL(fileURLWithPath: "/fixture-home")
+        let thirdPartyCache = Finding(
+            ruleID: "orphaned-application-storage",
+            ruleVersion: 1,
+            title: "Possible orphan: com.example.legacy",
+            path: home.appendingPathComponent("Library/Caches/com.example.legacy").path,
+            byteSize: 1,
+            category: .caches,
+            origin: "test",
+            explanation: "test",
+            risk: .reviewRequired,
+            supportedAction: .cleanup,
+            confidence: .needsUserReview
+        )
+        let appleCache = Finding(
+            ruleID: "orphaned-application-storage",
+            ruleVersion: 1,
+            title: "Possible orphan: com.apple.example",
+            path: home.appendingPathComponent("Library/Caches/com.apple.example").path,
+            byteSize: 1,
+            category: .caches,
+            origin: "test",
+            explanation: "test",
+            risk: .reviewRequired,
+            supportedAction: .cleanup,
+            confidence: .needsUserReview
+        )
+
+        XCTAssertNoThrow(try PlanBuilder(home: home).makePlan(
+            findings: [thirdPartyCache],
+            selectedIDs: [thirdPartyCache.id],
+            destination: .recovery
+        ))
+        XCTAssertThrowsError(try PlanBuilder(home: home).makePlan(
+            findings: [appleCache],
+            selectedIDs: [appleCache.id],
+            destination: .recovery
+        ))
     }
 
     func testPartialFailureRecordsAnOutcomeForEveryActionAndAuditsIt() async throws {

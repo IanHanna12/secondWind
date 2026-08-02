@@ -197,7 +197,9 @@ public struct ApplicationStorageDiscovery: @unchecked Sendable {
     /// therefore default to Recovery instead of being changed during a scan.
     public func orphanCleanupFindings(for applications: [InstalledApplication]) -> [Finding] {
         let installedIdentifiers = Set(applications.compactMap(\.bundleIdentifier))
-        return orphanCandidates(excluding: installedIdentifiers).map { candidate in
+        return orphanCandidates(excluding: installedIdentifiers)
+            .filter { OrphanedApplicationStoragePolicy.permitsCleanup(bundleIdentifier: $0.identifier, relationship: $0.relationship) }
+            .map { candidate in
             Finding(
                 ruleID: "orphaned-application-storage",
                 ruleVersion: BuiltInRules.version,
@@ -244,16 +246,22 @@ public struct ApplicationStorageDiscovery: @unchecked Sendable {
 
     private func orphanCandidateEntries(excluding installedIdentifiers: Set<String>) -> [StorageInventoryEntry] {
         orphanCandidates(excluding: installedIdentifiers).map { candidate in
-            StorageInventoryEntry(
+            let isEligibleForCleanup = OrphanedApplicationStoragePolicy.permitsCleanup(
+                bundleIdentifier: candidate.identifier,
+                relationship: candidate.relationship
+            )
+            return StorageInventoryEntry(
                 key: "possible-orphan|\(candidate.relationship.rawValue)|\(candidate.url.path)",
-                title: "Possible orphan: \(candidate.identifier)",
+                title: isEligibleForCleanup ? "Possible orphan: \(candidate.identifier)" : "Protected possible orphan: \(candidate.identifier)",
                 path: candidate.url.path,
                 category: category(for: candidate.relationship),
                 byteSize: fileSystem.allocatedSize(at: candidate.url),
                 origin: "Identifier-based application storage observation",
-                explanation: "No installed application with this bundle identifier was found. Review this exact \(candidate.relationship.title.lowercased()) path before adding it to a cleanup plan.",
-                risk: .reviewRequired,
-                isActionable: true,
+                explanation: isEligibleForCleanup
+                    ? "No installed application with this bundle identifier was found. Review this exact \(candidate.relationship.title.lowercased()) path before adding it to a cleanup plan."
+                    : OrphanedApplicationStoragePolicy.protectionReason(bundleIdentifier: candidate.identifier, relationship: candidate.relationship),
+                risk: isEligibleForCleanup ? .reviewRequired : .protected,
+                isActionable: isEligibleForCleanup,
                 modifiedAt: modificationDate(at: candidate.url)
             )
         }

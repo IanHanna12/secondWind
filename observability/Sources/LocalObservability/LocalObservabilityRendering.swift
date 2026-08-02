@@ -86,20 +86,34 @@ public struct DefaultObservabilityJSONRenderer: ObservabilityJSONRendering {
     }
 
     public func latestDelta(snapshot: LocalObservabilitySnapshot) throws -> Data {
-        try encoder.encode(snapshot.delta)
+        try encoder.encode(DeltaResponse(snapshot: snapshot))
     }
 }
 
 private struct HealthResponse: Codable {
+    let schemaVersion: Int
     let status: String
     let generatedAt: Date?
     let lastCompletedScanAt: Date?
     let snapshotAvailable: Bool
 
     init(snapshot: LocalObservabilitySnapshot?) {
+        schemaVersion = LocalObservabilitySnapshot.currentSchemaVersion
         status = snapshot == nil ? "waiting_for_snapshot" : "ok"
         generatedAt = snapshot?.generatedAt
         lastCompletedScanAt = snapshot?.scan.lastCompletedAt
         snapshotAvailable = snapshot != nil
+    }
+}
+
+private struct DeltaResponse: Codable {
+    let schemaVersion: Int
+    let generatedAt: Date
+    let delta: DeltaSummary
+
+    init(snapshot: LocalObservabilitySnapshot) {
+        schemaVersion = LocalObservabilitySnapshot.currentSchemaVersion
+        generatedAt = snapshot.generatedAt
+        delta = snapshot.delta
     }
 }
