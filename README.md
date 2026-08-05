@@ -119,6 +119,9 @@ eligible findings to the normal review, confirmation, Trash, or Recovery flow.
 
 ## Guarantees and limits
 
+Second Wind is designed to reduce risk, not eliminate it. Keep current backups
+before using any software that can move files.
+
 - Everything stays on your Mac. No account or network service is required.
 - All changes are reviewed and explicitly confirmed before execution. Nothing
   is deleted automatically.
