@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+  <meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Find what is using storage on your Mac — Second Wind</title>
+  <meta name="description" content="A conservative way to understand what is using storage on a Mac before deleting anything." />
+  <meta property="og:title" content="Find what is using storage on your Mac" /><meta property="og:description" content="Build a clear local storage picture before deleting anything, and distinguish known storage from protected or unknown locations." /><meta property="og:type" content="article" />
+  <meta property="og:url" content="https://ianhanna12.github.io/secondWind/guides/find-mac-storage/" />
+  <meta property="og:image" content="https://ianhanna12.github.io/secondWind/assets/social-card.png" /><meta property="og:image:width" content="1200" /><meta property="og:image:height" content="630" />
+  <meta name="twitter:card" content="summary_large_image" /><meta name="twitter:title" content="Find what is using storage on your Mac" /><meta name="twitter:description" content="Build a clear local storage picture before deleting anything." /><meta name="twitter:image" content="https://ianhanna12.github.io/secondWind/assets/social-card.png" />
+  <link rel="canonical" href="https://ianhanna12.github.io/secondWind/guides/find-mac-storage/" /><link rel="stylesheet" href="../../css/styles.css" />
+  <script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"Article","headline":"Find what is using storage on your Mac","description":"A conservative way to understand what is using storage on a Mac before deleting anything.","image":"https://ianhanna12.github.io/secondWind/assets/social-card.png","datePublished":"2026-08-08","dateModified":"2026-08-08","author":{"@type":"Person","name":"Ian Hanna"},"mainEntityOfPage":"https://ianhanna12.github.io/secondWind/guides/find-mac-storage/"},{"@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://ianhanna12.github.io/secondWind/"},{"@type":"ListItem","position":2,"name":"Guides","item":"https://ianhanna12.github.io/secondWind/guides/"},{"@type":"ListItem","position":3,"name":"Find storage"}]}]}</script>
+</head><body id="top">
+  <a class="skip-link" href="#main-content">Skip to content</a>
+  <header class="nav nav--static"><nav class="nav__inner" aria-label="Primary"><a class="brand" href="../../"><span class="brand__mark" aria-hidden="true">↝</span><span class="brand__name">Second&nbsp;Wind</span></a><div class="nav__actions"><a class="btn btn--ghost btn--sm" href="../">Guides</a><a class="btn btn--primary btn--sm" href="../../#download">Download</a></div></nav></header>
+  <main class="guide-article" id="main-content">
+    <nav class="guide-breadcrumb" aria-label="Breadcrumb"><a href="../../">Home</a> / <a href="../">Guides</a> / <span aria-current="page">Find storage</span></nav>
+    <p class="guide-article__eyebrow">Storage basics</p><h1>Find what is using storage on your Mac</h1>
+    <p class="guide-article__lede">Start by building a picture of storage. Do not begin by deleting folders whose names merely sound temporary.</p>
+    <h2>Start with the largest known areas</h2>
+    <p>macOS can show available storage and broad categories, but a category is not automatically a cleanup instruction. Look for a concrete path, a size, an owner, and a reason before treating an item as a candidate.</p>
+    <p>Second Wind scans the locations it explicitly understands and presents the resulting local inventory by category. A completed scan is read-only: it observes storage without moving anything.</p>
+    <h2>Separate known storage from unknown storage</h2>
+    <ul><li><strong>Known:</strong> an observed path has a category, origin, protection state, and supported action.</li><li><strong>Protected:</strong> the location may be shown so you can understand it, but it cannot join a cleanup plan.</li><li><strong>Unknown:</strong> absence from a storage tool is not proof that it is safe to remove.</li></ul>
+    <h2>Use a deliberate sequence</h2>
+    <ol><li>Run a read-only scan.</li><li>Sort the known entries by size or category.</li><li>Open the explanation for an item you are considering.</li><li>Select only the entries you recognise and want reviewed.</li><li>Read the complete cleanup plan before confirming a destination.</li></ol>
+    <h2>When the number does not match free space</h2>
+    <p>Planned bytes and observed free-space changes can differ. APFS allocation, snapshots, purgeable storage, and files that are still in Finder Trash all affect what macOS reports. Treat the inventory as an explanation of known paths, not as a promise that every byte will instantly become free.</p>
+    <h2>Common questions</h2>
+    <h3>What should I inspect first?</h3>
+    <p>Start with the largest category that Second Wind can explain, then open its individual entries. Developer storage, large application bundles, Downloads, and Recovery often provide clearer evidence than a broad system category. Size helps you prioritise inspection; it does not establish that an item is safe to remove.</p>
+    <h3>Why did a category change between scans?</h3>
+    <p>Applications continuously create and remove caches, build output, logs, downloads, and support files. Second Wind compares completed inventory snapshots, so the change describes known storage observed at two points in time. It does not diff file contents or claim that every change was caused by Second Wind.</p>
+    <aside class="guide-callout"><strong>Keep the boundary</strong><p>A large folder is not enough evidence to delete it. If Second Wind cannot explain the path and its supported action, leave it protected.</p></aside>
+    <div class="guide-article__next"><a class="btn btn--ghost" href="../mac-system-data/">Why System Data is difficult</a><a class="btn btn--primary" href="../../#download">Try Second Wind</a></div>
+  </main><footer class="footer"><div class="footer__legal"><p>Copyright © 2026 Ian Hanna. Licensed under GPL-3.0-only.</p><p class="footer__honest">No remote telemetry. No analytics. No cloud sync.</p></div></footer>
+</body></html>

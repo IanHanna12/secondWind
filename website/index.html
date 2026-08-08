@@ -1,0 +1,568 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Second Wind — Local-first Mac storage analysis and cleanup</title>
+  <meta name="description" content="Second Wind is a local-first macOS 15+ app for reviewing known cleanup candidates and making deliberate storage changes. No remote telemetry, analytics, or cloud sync." />
+  <meta name="theme-color" content="#07090d" />
+
+  <meta property="og:title" content="Second Wind — Local-first Mac storage analysis and cleanup" />
+  <meta property="og:description" content="Local-first storage intelligence for macOS 15+. Review, confirm, and reclaim space with no remote telemetry or cloud sync." />
+  <meta property="og:type" content="website" />
+  <meta property="og:url" content="https://ianhanna12.github.io/secondWind/" />
+  <meta property="og:image" content="https://ianhanna12.github.io/secondWind/assets/social-card.png" />
+  <meta property="og:image:width" content="1200" />
+  <meta property="og:image:height" content="630" />
+  <meta property="og:image:alt" content="Second Wind beside its native macOS storage overview" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="Second Wind — Local-first Mac storage analysis and cleanup" />
+  <meta name="twitter:description" content="Review known storage, confirm every change, and keep cleanup recoverable." />
+  <meta name="twitter:image" content="https://ianhanna12.github.io/secondWind/assets/social-card.png" />
+  <link rel="canonical" href="https://ianhanna12.github.io/secondWind/" />
+
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop offset='0' stop-color='%235ce6c0'/%3E%3Cstop offset='1' stop-color='%233fc5f0'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='32' height='32' rx='8' fill='%23070a0d'/%3E%3Cpath d='M6 19c4-6 8 4 12-2s4-4 8-2' stroke='url(%23g)' stroke-width='2.6' stroke-linecap='round' fill='none'/%3E%3C/svg%3E" />
+
+  <link rel="stylesheet" href="css/styles.css" />
+  <noscript><style>.reveal { opacity: 1; transform: none; } [data-shot-panel][hidden] { display: block !important; }</style></noscript>
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "SoftwareApplication",
+    "name": "Second Wind",
+    "applicationCategory": "UtilitiesApplication",
+    "operatingSystem": "macOS 15 or later",
+    "softwareVersion": "1.0.0",
+    "description": "A local-first macOS application for understanding known storage and reviewing recoverable cleanup plans.",
+    "url": "https://ianhanna12.github.io/secondWind/",
+    "downloadUrl": "https://github.com/IanHanna12/secondWind/releases/download/v1.0.0/Second-Wind-1.0.0.zip",
+    "codeRepository": "https://github.com/IanHanna12/secondWind",
+    "license": "https://www.gnu.org/licenses/gpl-3.0.html",
+    "offers": {
+      "@type": "Offer",
+      "price": "0",
+      "priceCurrency": "USD"
+    }
+  }
+  </script>
+</head>
+<body id="top">
+
+  <a class="skip-link" href="#main-content">Skip to content</a>
+
+  <!-- ======= Grain overlay ======= -->
+  <div class="grain" aria-hidden="true"></div>
+
+  <!-- ======= Scroll progress ======= -->
+  <div class="scroll-progress" aria-hidden="true"><span id="scrollBar"></span></div>
+
+  <!-- ======= Background atmosphere ======= -->
+  <div class="atmosphere" aria-hidden="true">
+    <div class="orb orb--mint"></div>
+    <div class="orb orb--blue"></div>
+    <div class="grid-lines"></div>
+  </div>
+
+  <!-- ======= Navigation ======= -->
+  <header class="nav" id="nav">
+    <nav class="nav__inner" aria-label="Primary">
+      <a class="brand" href="#top">
+        <span class="brand__mark" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M3 13c5-8 10 6 15-1"/></svg>
+        </span>
+        <span class="brand__name">Second&nbsp;Wind</span>
+      </a>
+
+      <ul class="nav__links" id="navLinks">
+        <li><a href="#features">Features</a></li>
+        <li><a href="#app">Inside the app</a></li>
+        <li><a href="#guides">Guides</a></li>
+        <li><a href="#philosophy">Philosophy</a></li>
+        <li><a href="#privacy">Privacy</a></li>
+        <li><a href="#download">Download</a></li>
+      </ul>
+
+      <div class="nav__actions">
+        <a class="btn btn--ghost btn--sm nav__github" href="https://github.com/IanHanna12/secondWind" target="_blank" rel="noopener">
+          <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 .5C5.65.5.5 5.65.5 12c0 5.08 3.29 9.39 7.86 10.91.58.11.79-.25.79-.55v-2.15c-3.2.7-3.87-1.36-3.87-1.36-.52-1.33-1.28-1.68-1.28-1.68-1.04-.71.08-.7.08-.7 1.15.08 1.76 1.18 1.76 1.18 1.03 1.76 2.69 1.25 3.35.96.1-.75.4-1.25.72-1.54-2.55-.29-5.24-1.28-5.24-5.68 0-1.26.45-2.28 1.18-3.09-.12-.29-.51-1.46.11-3.05 0 0 .96-.31 3.16 1.18a11 11 0 0 1 5.76 0c2.2-1.49 3.16-1.18 3.16-1.18.62 1.59.23 2.76.11 3.05.73.81 1.18 1.83 1.18 3.09 0 4.41-2.69 5.38-5.25 5.67.41.35.77 1.05.77 2.12v3.14c0 .3.21.66.8.55A11.5 11.5 0 0 0 23.5 12C23.5 5.65 18.35.5 12 .5Z"/></svg>
+          GitHub
+        </a>
+        <a class="btn btn--primary btn--sm" href="#download">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12"/><path d="m7 10 5 5 5-5"/><path d="M4 19h16"/></svg>
+          Download 1.0
+        </a>
+        <button class="nav__toggle" id="navToggle" aria-label="Menu" aria-expanded="false" aria-controls="navLinks">
+          <span></span><span></span><span></span>
+        </button>
+      </div>
+    </nav>
+  </header>
+
+  <main id="main-content">
+
+    <!-- ======= Hero ======= -->
+    <section class="hero">
+      <div class="hero__content">
+        <p class="eyebrow reveal">Local-first storage intelligence · macOS 15+</p>
+        <h1 class="hero__title reveal">
+          Give your Mac<br />
+          <span class="grad">room to breathe.</span>
+        </h1>
+        <p class="hero__sub reveal">
+          Second Wind reviews the storage your Mac already holds — and only the
+          places it explicitly understands. Review what it finds, confirm what
+          changes, and reclaim space with confidence.
+        </p>
+        <p class="hero__scope reveal">
+          Understand Xcode build data, known application storage, caches, logs,
+          Downloads, and other explicitly supported locations.
+        </p>
+        <div class="hero__cta reveal">
+          <a class="btn btn--primary btn--lg" href="#download">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12"/><path d="m7 10 5 5 5-5"/><path d="M4 19h16"/></svg>
+            Download Second Wind
+          </a>
+          <a class="btn btn--ghost btn--lg" href="#philosophy">Read the philosophy</a>
+        </div>
+        <ul class="hero__meta reveal">
+          <li><span class="dot" aria-hidden="true"></span>macOS 15 or later</li>
+          <li><span class="dot" aria-hidden="true"></span>No account or remote service</li>
+          <li><span class="dot" aria-hidden="true"></span>GPL-3.0</li>
+        </ul>
+      </div>
+
+      <figure class="hero__shot reveal">
+        <div class="window">
+          <div class="window__bar">
+            <span class="traffic" aria-hidden="true"><i></i><i></i><i></i></span>
+            <span class="window__title">Second Wind — Storage overview</span>
+          </div>
+          <img src="assets/screenshots/home-storage-overview.png" alt="Second Wind storage overview showing observed storage categories and changes since the previous scan" loading="eager" />
+        </div>
+        <figcaption class="hero__caption" aria-hidden="true">
+          <span class="chip chip--live"><i class="pulse"></i>Local only — nothing leaves your Mac</span>
+        </figcaption>
+      </figure>
+    </section>
+
+    <!-- ======= Trust strip ======= -->
+    <section class="strip">
+      <ul>
+        <li class="reveal"><strong>Understand before acting</strong><span>A scan is observation, not action.</span></li>
+        <li class="reveal"><strong>Review before changing</strong><span>Every change is confirmed explicitly.</span></li>
+        <li class="reveal"><strong>Recovery over destruction</strong><span>Items stay recoverable until you decide.</span></li>
+        <li class="reveal"><strong>Make honest claims</strong><span>No invented health scores. Ever.</span></li>
+      </ul>
+    </section>
+
+    <!-- ======= Features ======= -->
+    <section class="section" id="features">
+      <div class="section__head reveal">
+        <p class="eyebrow">What it does</p>
+        <h2 class="section__title">Built to be deliberate,<br />not dramatic.</h2>
+        <p class="section__sub">
+          Second Wind is intentionally conservative. It understands a small set of
+          storage locations deeply, and treats everything else as off-limits.
+        </p>
+      </div>
+
+      <div class="grid grid--3">
+        <article class="card reveal">
+          <span class="card__icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M7 15l4-6 4 3 5-8"/></svg>
+          </span>
+          <h3>Storage intelligence</h3>
+          <p>Each scan records a local inventory of what Second Wind understands, grouped into categories with the concrete paths behind them — compared against the previous scan.</p>
+        </article>
+
+        <article class="card reveal">
+          <span class="card__icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l8 4.5v9L12 21l-8-4.5v-9L12 3z"/><path d="M12 12l8-4.5"/><path d="M12 12v9"/></svg>
+          </span>
+          <h3>Reviewed cleanup</h3>
+          <p>Deterministic recommendations explain a known location, its size, and its local modification date. They never select, move, or delete anything on their own.</p>
+        </article>
+
+        <article class="card reveal">
+          <span class="card__icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7h18"/><path d="M4 7l1.5 13a2 2 0 0 0 2 1.8h9a2 2 0 0 0 2-1.8L20 7"/><path d="M9 7V5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2"/><path d="M12 11v6"/><path d="M9.5 17l2.5 2 2.5-2"/></svg>
+          </span>
+          <h3>Recovery, not deletion</h3>
+          <p>Reviewed items move to Finder Trash or stay in local Recovery storage — recoverable until you decide otherwise. Permanent deletion is a separate, deliberate action.</p>
+        </article>
+
+        <article class="card reveal">
+          <span class="card__icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 9h18"/><path d="M9 9v11"/><path d="M15 9v11"/></svg>
+          </span>
+          <h3>Application storage</h3>
+          <p>Separates each app bundle from its known support data, caches, logs, and containers — with the path and association reason for every relationship.</p>
+        </article>
+
+        <article class="card reveal">
+          <span class="card__icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20V10"/><path d="M18 20V4"/><path d="M6 20v-4"/></svg>
+          </span>
+          <h3>Local observability</h3>
+          <p>A fully standalone Prometheus &amp; Grafana companion reads existing local snapshots and serves an immutable view on 127.0.0.1. It never exposes paths or filenames.</p>
+        </article>
+
+        <article class="card reveal">
+          <span class="card__icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg>
+          </span>
+          <h3>Verified, not guessed</h3>
+          <p>Check a validated local volume with macOS's read-only verification. Ambiguous or sensitive locations stay protected rather than being guessed at.</p>
+        </article>
+      </div>
+    </section>
+
+    <!-- ======= Inside the app ======= -->
+    <section class="section section--alt" id="app">
+      <div class="section__head reveal">
+        <p class="eyebrow">Inside the app</p>
+        <h2 class="section__title">Every step shown.<br />Every change confirmed.</h2>
+        <p class="section__sub">
+          The whole workflow is designed around one idea: you stay in control.
+          Explore the screens below.
+        </p>
+      </div>
+
+      <div class="tabs reveal">
+        <div class="tabs__bar" role="tablist" aria-label="App screens">
+          <button class="tab is-active" id="tab-home" role="tab" aria-selected="true" aria-controls="shot-home" data-shot="home">Overview</button>
+          <button class="tab" id="tab-cleanup" role="tab" aria-selected="false" aria-controls="shot-cleanup" tabindex="-1" data-shot="cleanup">Cleanup</button>
+          <button class="tab" id="tab-review" role="tab" aria-selected="false" aria-controls="shot-review" tabindex="-1" data-shot="review">Final review</button>
+          <button class="tab" id="tab-recovery" role="tab" aria-selected="false" aria-controls="shot-recovery" tabindex="-1" data-shot="recovery">Recovery</button>
+          <button class="tab" id="tab-monitor" role="tab" aria-selected="false" aria-controls="shot-monitor" tabindex="-1" data-shot="monitor">Monitor</button>
+        </div>
+
+        <div class="tabs__stage">
+          <figure class="shot is-active" id="shot-home" role="tabpanel" aria-labelledby="tab-home" tabindex="0" data-shot-panel>
+            <div class="window">
+              <div class="window__bar"><span class="traffic" aria-hidden="true"><i></i><i></i><i></i></span><span class="window__title">Storage overview</span></div>
+              <img src="assets/screenshots/home-storage-overview.png" alt="Storage overview screen" loading="lazy" />
+            </div>
+            <figcaption>Observed storage categories at a glance, with changes since the previous scan.</figcaption>
+          </figure>
+
+          <figure class="shot" id="shot-cleanup" role="tabpanel" aria-labelledby="tab-cleanup" tabindex="0" hidden data-shot-panel>
+            <div class="window">
+              <div class="window__bar"><span class="traffic" aria-hidden="true"><i></i><i></i><i></i></span><span class="window__title">Cleanup candidates</span></div>
+              <img src="assets/screenshots/cleanup-selection.png" alt="Cleanup candidate selection screen" loading="lazy" />
+            </div>
+            <figcaption>Deterministic, explained findings. Nothing is auto-selected for you.</figcaption>
+          </figure>
+
+          <figure class="shot" id="shot-review" role="tabpanel" aria-labelledby="tab-review" tabindex="0" hidden data-shot-panel>
+            <div class="window">
+              <div class="window__bar"><span class="traffic" aria-hidden="true"><i></i><i></i><i></i></span><span class="window__title">Final review</span></div>
+              <img src="assets/screenshots/cleanup-final-review.png" alt="Final cleanup review screen" loading="lazy" />
+            </div>
+            <figcaption>The complete plan, with destinations chosen — confirmed before anything moves.</figcaption>
+          </figure>
+
+          <figure class="shot" id="shot-recovery" role="tabpanel" aria-labelledby="tab-recovery" tabindex="0" hidden data-shot-panel>
+            <div class="window">
+              <div class="window__bar"><span class="traffic" aria-hidden="true"><i></i><i></i><i></i></span><span class="window__title">Recovery</span></div>
+              <img src="assets/screenshots/recovery-activity.png" alt="Recovery storage and local activity screen" loading="lazy" />
+            </div>
+            <figcaption>Recoverable items and local activity — nothing deleted automatically, ever.</figcaption>
+          </figure>
+
+          <figure class="shot" id="shot-monitor" role="tabpanel" aria-labelledby="tab-monitor" tabindex="0" hidden data-shot-panel>
+            <div class="window">
+              <div class="window__bar"><span class="traffic" aria-hidden="true"><i></i><i></i><i></i></span><span class="window__title">System monitor</span></div>
+              <img src="assets/screenshots/system-monitor.png" alt="Local system monitor screen" loading="lazy" />
+            </div>
+            <figcaption>Watch the local state Second Wind understands — live, and entirely on your Mac.</figcaption>
+          </figure>
+        </div>
+      </div>
+    </section>
+
+    <!-- ======= Philosophy ======= -->
+    <section class="section" id="philosophy">
+      <div class="section__head reveal">
+        <p class="eyebrow">The philosophy</p>
+        <h2 class="section__title">Seven principles.<br />Zero shortcuts.</h2>
+        <p class="section__sub">
+          Second Wind exists to help people understand and make deliberate storage
+          changes on their own Mac — not to invent problems, create urgency, or
+          promise magic.
+        </p>
+      </div>
+
+      <ol class="principles">
+        <li class="principle reveal">
+          <span class="principle__num">01</span>
+          <div><h3>Understand before acting</h3><p>Second Wind acts only on locations and categories it explicitly understands. Unknown, ambiguous, or sensitive data is left untouched rather than guessed at.</p></div>
+        </li>
+        <li class="principle reveal">
+          <span class="principle__num">02</span>
+          <div><h3>Review before changing</h3><p>A scan is observation, not action. Every change is shown in a plan and must be explicitly confirmed. Opening a review sheet never moves a file.</p></div>
+        </li>
+        <li class="principle reveal">
+          <span class="principle__num">03</span>
+          <div><h3>Prefer recovery over destruction</h3><p>Reviewed items move to Finder Trash or local Recovery storage. Recovery items remain on the Mac and are never deleted automatically.</p></div>
+        </li>
+        <li class="principle reveal">
+          <span class="principle__num">04</span>
+          <div><h3>Make honest claims</h3><p>No claims about cleaning RAM, speeding up a Mac, repairing permissions, or invented system-health scores. It reports the local information it can support.</p></div>
+        </li>
+        <li class="principle reveal">
+          <span class="principle__num">05</span>
+          <div><h3>Use the least privilege needed</h3><p>The standard release works without elevated privilege and does not include the optional helper. The helper source accepts only typed, validated requests — never arbitrary commands or paths.</p></div>
+        </li>
+        <li class="principle reveal">
+          <span class="principle__num">06</span>
+          <div><h3>Keep data local and visible</h3><p>No account, remote telemetry, analytics, cloud sync, remote rule downloads, or update checks. Decisions come from bundled rules; behavior is traceable in the code.</p></div>
+        </li>
+        <li class="principle reveal">
+          <span class="principle__num">07</span>
+          <div><h3>Grow through explicit policy</h3><p>New cleanup capability is added only when its boundaries, recovery story, review flow, and tests are clear. Convenience is never a reason to make destruction less understandable.</p></div>
+        </li>
+      </ol>
+    </section>
+
+    <!-- ======= Privacy spotlight ======= -->
+    <section class="privacy" id="privacy">
+      <div class="privacy__inner reveal">
+        <div class="privacy__copy">
+          <p class="eyebrow">Privacy, by design</p>
+          <h2 class="privacy__title">Your data never<br />leaves your Mac.</h2>
+          <p class="privacy__lede">
+            The main app requires no account or remote service. Its inventory,
+            snapshots, Recovery data, and activity history are stored locally,
+            and its decisions come from rules bundled with the app.
+          </p>
+          <a class="btn btn--primary" href="https://github.com/IanHanna12/secondWind" target="_blank" rel="noopener">Read the source on GitHub</a>
+        </div>
+
+        <ul class="privacy__list">
+          <li class="reveal"><span class="privacy__check" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="m4 12.5 5 5L20 6.5"/></svg>
+          </span><div><strong>No account required</strong><p>No signup, no login, no profile.</p></div></li>
+
+          <li class="reveal"><span class="privacy__check" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="m4 12.5 5 5L20 6.5"/></svg>
+          </span><div><strong>No remote telemetry or analytics</strong><p>Second Wind does not transmit information about you or your Mac.</p></div></li>
+
+          <li class="reveal"><span class="privacy__check" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="m4 12.5 5 5L20 6.5"/></svg>
+          </span><div><strong>No cloud sync</strong><p>No remote rule downloads or automatic update checks.</p></div></li>
+
+          <li class="reveal"><span class="privacy__check" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="m4 12.5 5 5L20 6.5"/></svg>
+          </span><div><strong>Local storage and history</strong><p>Snapshots, Recovery manifests, and activity live on your Mac.</p></div></li>
+
+          <li class="reveal"><span class="privacy__check" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="m4 12.5 5 5L20 6.5"/></svg>
+          </span><div><strong>Optional observability, local only</strong><p>When enabled, Prometheus &amp; Grafana read redacted aggregate metrics through a loopback-only endpoint. They never receive paths or names.</p></div></li>
+        </ul>
+      </div>
+    </section>
+
+    <!-- ======= What it helps with ======= -->
+    <section class="section">
+      <div class="section__head reveal">
+        <p class="eyebrow">Where it looks</p>
+        <h2 class="section__title">Known places,<br />handled with care.</h2>
+        <p class="section__sub">
+          Second Wind explains the storage areas it understands without presenting
+          them as automatic cleanup targets.
+        </p>
+      </div>
+
+      <ul class="chips reveal">
+        <li>Applications</li>
+        <li>Downloads</li>
+        <li>Documents</li>
+        <li>Desktop</li>
+        <li>Developer storage</li>
+        <li>Caches</li>
+        <li>Logs</li>
+        <li>Recovery storage</li>
+        <li>App support &amp; containers</li>
+        <li>Orphaned identifiers</li>
+      </ul>
+    </section>
+
+    <!-- ======= Guides ======= -->
+    <section class="section section--alt" id="guides">
+      <div class="section__head reveal">
+        <p class="eyebrow">Guides</p>
+        <h2 class="section__title">Understand your storage<br />before changing it.</h2>
+        <p class="section__sub">
+          Practical, conservative guides for common macOS storage questions.
+          They explain what to inspect, what to avoid, and where Second Wind can help.
+        </p>
+      </div>
+
+      <div class="grid grid--3 guides-grid">
+        <a class="card guide-card reveal" href="guides/find-mac-storage/">
+          <p class="guide-card__label">Storage basics</p>
+          <h3>Find what is using storage on your Mac</h3>
+          <p>Start with evidence, identify the largest known areas, and avoid treating unknown storage as disposable.</p>
+          <span class="guide-card__link">Read guide →</span>
+        </a>
+        <a class="card guide-card reveal" href="guides/clear-xcode-derived-data/">
+          <p class="guide-card__label">Developer storage</p>
+          <h3>Clear Xcode Derived Data safely</h3>
+          <p>Understand what Xcode rebuilds, what a cleanup changes, and why active builds should be left alone.</p>
+          <span class="guide-card__link">Read guide →</span>
+        </a>
+        <a class="card guide-card reveal" href="guides/mac-cache-cleanup/">
+          <p class="guide-card__label">Caches</p>
+          <h3>Which Mac caches are safe to remove?</h3>
+          <p>Learn why cache folders are not all equal and why location and ownership matter before cleanup.</p>
+          <span class="guide-card__link">Read guide →</span>
+        </a>
+        <a class="card guide-card reveal" href="guides/recovery-vs-trash/">
+          <p class="guide-card__label">Recovery</p>
+          <h3>Finder Trash vs local Recovery</h3>
+          <p>Choose the right reversible destination and know what happens before permanent deletion.</p>
+          <span class="guide-card__link">Read guide →</span>
+        </a>
+        <a class="card guide-card reveal" href="guides/mac-system-data/">
+          <p class="guide-card__label">System storage</p>
+          <h3>Why macOS System Data is difficult to clean</h3>
+          <p>See why a large System Data number is not a safe deletion list and what to inspect instead.</p>
+          <span class="guide-card__link">Read guide →</span>
+        </a>
+        <a class="card guide-card guide-card--all reveal" href="guides/">
+          <p class="guide-card__label">All guides</p>
+          <h3>Browse the storage guide library</h3>
+          <p>Start with a real problem, then follow a cautious path to understanding and cleanup.</p>
+          <span class="guide-card__link">Browse guides →</span>
+        </a>
+      </div>
+    </section>
+
+    <!-- ======= Download ======= -->
+    <section class="section section--alt" id="download">
+      <div class="section__head reveal">
+        <p class="eyebrow">Get started</p>
+        <h2 class="section__title">Reclaim space,<br />calmly.</h2>
+        <p class="section__sub">Requires macOS 15 or later. Keep current backups before using any software that can move files — Second Wind is designed to reduce risk, not eliminate it.</p>
+      </div>
+
+      <div class="download reveal">
+        <div class="download__main">
+          <div class="download__version">
+            <span class="download__tag">v1.0.0</span>
+            <span class="download__note">Stable foundation · 2 August 2026</span>
+          </div>
+          <h3 class="download__name">Second Wind 1.0</h3>
+          <p class="download__desc">
+            Download the release archive, verify it against <code>SHA256SUMS</code>,
+            move <code>Second Wind.app</code> to <code>/Applications</code>, and follow
+            the installation guide. Builds are ad-hoc signed — macOS may ask you to
+            <em>Open Anyway</em> on first launch.
+          </p>
+          <a class="btn btn--primary btn--lg" href="https://github.com/IanHanna12/secondWind/releases/download/v1.0.0/Second-Wind-1.0.0.zip">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12"/><path d="m7 10 5 5 5-5"/><path d="M4 19h16"/></svg>
+            Download Second-Wind-1.0.0.zip
+          </a>
+          <div class="download__links">
+            <a href="https://github.com/IanHanna12/secondWind/blob/main/Docs/INSTALLATION.md" target="_blank" rel="noopener">Installation guide</a>
+            <a href="https://github.com/IanHanna12/secondWind/releases/download/v1.0.0/SHA256SUMS">SHA-256 checksums</a>
+            <a href="https://github.com/IanHanna12/secondWind/releases/tag/v1.0.0" target="_blank" rel="noopener">Release notes</a>
+          </div>
+        </div>
+
+        <div class="download__build">
+          <p class="download__build-label">Install with Homebrew</p>
+          <div class="codeblock">
+            <div class="codeblock__bar">
+              <span>bash</span>
+              <button class="codeblock__copy" data-copy data-copy-target="brewCode" aria-label="Copy Homebrew command">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>
+                <span role="status" aria-live="polite">Copy</span>
+              </button>
+            </div>
+            <pre><code id="brewCode">brew install --cask IanHanna12/tap/second-wind</code></pre>
+          </div>
+          <p class="download__build-note">Homebrew downloads the same release archive and installs Second Wind as a macOS app.</p>
+
+          <p class="download__build-label">Or build from source</p>
+          <div class="codeblock">
+            <div class="codeblock__bar">
+              <span>bash</span>
+              <button class="codeblock__copy" data-copy data-copy-target="buildCode" aria-label="Copy build commands">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>
+                <span role="status" aria-live="polite">Copy</span>
+              </button>
+            </div>
+            <pre><code id="buildCode">git clone https://github.com/IanHanna12/secondWind.git
+cd secondWind
+./Scripts/run-debug-app.sh</code></pre>
+          </div>
+          <p class="download__build-note">Launches the standard app without the optional privileged helper enabled.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ======= Feedback ======= -->
+    <section class="support" aria-labelledby="support-title">
+      <div class="support__inner reveal">
+        <div>
+          <p class="eyebrow">Help shape what comes next</p>
+          <h2 id="support-title">Questions, problems,<br />or a missing workflow?</h2>
+          <p>Second Wind is new. Reports from real Macs are more useful than speculative features. Share redacted details only—never post full paths, user names, Recovery references, manifests, or diagnostic exports.</p>
+        </div>
+        <div class="support__actions">
+          <a class="btn btn--primary" href="https://github.com/IanHanna12/secondWind/issues/new?template=bug_report.yml" target="_blank" rel="noopener">Report a problem</a>
+          <a class="btn btn--ghost" href="https://github.com/IanHanna12/secondWind/issues/new?template=feature_request.yml" target="_blank" rel="noopener">Suggest a feature</a>
+          <a class="support__discussion" href="https://github.com/IanHanna12/secondWind/discussions" target="_blank" rel="noopener">Ask a general question →</a>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- ======= Footer ======= -->
+  <footer class="footer">
+    <div class="footer__inner">
+      <div class="footer__brand">
+        <a class="brand" href="#top">
+          <span class="brand__mark" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M3 13c5-8 10 6 15-1"/></svg>
+          </span>
+          <span class="brand__name">Second&nbsp;Wind</span>
+        </a>
+        <p>Give your Mac room to breathe.</p>
+      </div>
+
+      <div class="footer__cols">
+        <div class="footer__col">
+          <h4>Project</h4>
+          <ul>
+            <li><a href="https://github.com/IanHanna12/secondWind" target="_blank" rel="noopener">GitHub</a></li>
+            <li><a href="https://github.com/IanHanna12/secondWind/releases" target="_blank" rel="noopener">Releases</a></li>
+            <li><a href="https://github.com/IanHanna12/secondWind/issues/new?template=bug_report.yml" target="_blank" rel="noopener">Report a problem</a></li>
+            <li><a href="https://github.com/IanHanna12/secondWind/issues/new?template=feature_request.yml" target="_blank" rel="noopener">Suggest a feature</a></li>
+            <li><a href="https://github.com/IanHanna12/secondWind/blob/main/LICENSE" target="_blank" rel="noopener">License</a></li>
+          </ul>
+        </div>
+        <div class="footer__col">
+          <h4>Site</h4>
+          <ul>
+            <li><a href="#features">Features</a></li>
+            <li><a href="#guides">Guides</a></li>
+            <li><a href="#philosophy">Philosophy</a></li>
+            <li><a href="#privacy">Privacy</a></li>
+            <li><a href="#download">Download</a></li>
+          </ul>
+        </div>
+      </div>
+    </div>
+    <div class="footer__legal">
+      <p>Copyright © <span id="year">2026</span> Ian Hanna. Licensed under GPL-3.0-only.</p>
+      <p class="footer__honest">No remote telemetry. No analytics. No cloud sync. Your storage data stays local.</p>
+    </div>
+  </footer>
+
+  <script src="js/main.js"></script>
+</body>
+</html>

@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+  <meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Which Mac caches are safe to remove? — Second Wind</title>
+  <meta name="description" content="Why a cache folder is not automatically safe to delete, and how to review known cache storage conservatively." />
+  <meta property="og:title" content="Which Mac caches are safe to remove?" /><meta property="og:description" content="Learn why cache safety depends on an exact path, owner, and recovery route rather than the folder name alone." /><meta property="og:type" content="article" />
+  <meta property="og:url" content="https://ianhanna12.github.io/secondWind/guides/mac-cache-cleanup/" />
+  <meta property="og:image" content="https://ianhanna12.github.io/secondWind/assets/social-card.png" /><meta property="og:image:width" content="1200" /><meta property="og:image:height" content="630" />
+  <meta name="twitter:card" content="summary_large_image" /><meta name="twitter:title" content="Which Mac caches are safe to remove?" /><meta name="twitter:description" content="Why cache cleanup needs an exact path, owner, and recovery route." /><meta name="twitter:image" content="https://ianhanna12.github.io/secondWind/assets/social-card.png" />
+  <link rel="canonical" href="https://ianhanna12.github.io/secondWind/guides/mac-cache-cleanup/" /><link rel="stylesheet" href="../../css/styles.css" />
+  <script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"Article","headline":"Which Mac caches are safe to remove?","description":"Why a cache folder is not automatically safe to delete, and how to review known cache storage conservatively.","image":"https://ianhanna12.github.io/secondWind/assets/social-card.png","datePublished":"2026-08-08","dateModified":"2026-08-08","author":{"@type":"Person","name":"Ian Hanna"},"mainEntityOfPage":"https://ianhanna12.github.io/secondWind/guides/mac-cache-cleanup/"},{"@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://ianhanna12.github.io/secondWind/"},{"@type":"ListItem","position":2,"name":"Guides","item":"https://ianhanna12.github.io/secondWind/guides/"},{"@type":"ListItem","position":3,"name":"Cache cleanup"}]}]}</script>
+</head><body id="top">
+  <a class="skip-link" href="#main-content">Skip to content</a>
+  <header class="nav nav--static"><nav class="nav__inner" aria-label="Primary"><a class="brand" href="../../"><span class="brand__mark" aria-hidden="true">↝</span><span class="brand__name">Second&nbsp;Wind</span></a><div class="nav__actions"><a class="btn btn--ghost btn--sm" href="../">Guides</a><a class="btn btn--primary btn--sm" href="../../#download">Download</a></div></nav></header>
+  <main class="guide-article" id="main-content">
+    <nav class="guide-breadcrumb" aria-label="Breadcrumb"><a href="../../">Home</a> / <a href="../">Guides</a> / <span aria-current="page">Cache cleanup</span></nav>
+    <p class="guide-article__eyebrow">Caches</p><h1>Which Mac caches are safe to remove?</h1>
+    <p class="guide-article__lede">“Cache” describes a purpose, not a universal safety guarantee. Its path, owner, and the app that uses it still matter.</p>
+    <h2>Why broad cache deletion is risky</h2>
+    <p>Some cached data is easily recreated. Other folders beside it can contain application state, user-created work, shared resources, or data whose ownership is ambiguous. A script that removes every folder named “cache” cannot make that distinction reliably.</p>
+    <h2>What Second Wind considers</h2>
+    <p>Cleanup eligibility comes from a known location and a rule with an approved route. The app can show an item without making it actionable. Protected, ambiguous, Apple-owned, and user-data-bearing locations remain outside the cleanup plan.</p>
+    <h2>How to review an eligible cache</h2>
+    <ol><li>Read the item’s explanation and rule.</li><li>Confirm the displayed path belongs to the app or tool you expect.</li><li>Choose only the entries you want in the plan.</li><li>Use the final review to choose Finder Trash or local Recovery.</li><li>Afterward, check the recorded result rather than assuming all planned bytes became free space.</li></ol>
+    <h2>Orphaned app data needs more caution</h2>
+    <p>A folder with an uninstalled app’s identifier is not automatically safe. Second Wind limits reviewed orphan cleanup to exact third-party cache and log paths. Apple-owned identifiers, Application Support, Containers, Preferences, saved state, and ambiguous matches stay protected.</p>
+    <h2>Common questions</h2>
+    <h3>Will an application recreate its cache?</h3>
+    <p>A known cache is generally intended to be recreated, but rebuilding may require time, network access, or a fresh application launch. That does not make every neighbouring folder safe. Review the matched rule, exact location, ownership explanation, and supported destination for the individual entry.</p>
+    <h3>Why is a visible cache protected?</h3>
+    <p>Visibility and cleanup eligibility are separate. A path may be useful for explaining storage while its ownership, contents, approved root, or recovery behavior remains uncertain. In that case Second Wind keeps it visible and non-actionable rather than converting limited evidence into permission to move data.</p>
+    <aside class="guide-callout"><strong>Rule of thumb</strong><p>Remove a cache only when you can identify the exact location, why it was observed, and what will happen if the owning app recreates it.</p></aside>
+    <div class="guide-article__next"><a class="btn btn--ghost" href="../find-mac-storage/">Find storage first</a><a class="btn btn--primary" href="../../#download">Review known caches</a></div>
+  </main><footer class="footer"><div class="footer__legal"><p>Copyright © 2026 Ian Hanna. Licensed under GPL-3.0-only.</p><p class="footer__honest">No remote telemetry. No analytics. No cloud sync.</p></div></footer>
+</body></html>

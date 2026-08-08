@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="robots" content="noindex" />
+  <title>Second Wind social card source</title>
+  <style>
+    * { box-sizing: border-box; }
+    html, body { width: 1200px; height: 630px; margin: 0; overflow: hidden; }
+    body {
+      position: relative;
+      display: grid;
+      grid-template-columns: 0.94fr 1.06fr;
+      align-items: center;
+      gap: 48px;
+      padding: 64px 70px;
+      color: #e8edf4;
+      background:
+        radial-gradient(circle at 5% 5%, rgba(92, 230, 192, 0.15), transparent 32%),
+        radial-gradient(circle at 95% 5%, rgba(63, 197, 240, 0.12), transparent 30%),
+        #07090d;
+      font-family: -apple-system, BlinkMacSystemFont, "Helvetica Neue", sans-serif;
+    }
+    body::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      opacity: 0.25;
+      background-image:
+        linear-gradient(rgba(148, 163, 184, 0.08) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(148, 163, 184, 0.08) 1px, transparent 1px);
+      background-size: 64px 64px;
+      mask-image: radial-gradient(ellipse at 50% 30%, black, transparent 78%);
+    }
+    .copy, .product { position: relative; z-index: 1; min-width: 0; }
+    .brand { display: flex; align-items: center; gap: 13px; margin-bottom: 62px; font-size: 24px; font-weight: 650; }
+    .mark {
+      width: 44px;
+      height: 44px;
+      display: grid;
+      place-items: center;
+      border: 1px solid rgba(92, 230, 192, 0.34);
+      border-radius: 12px;
+      color: #5ce6c0;
+      background: rgba(92, 230, 192, 0.09);
+      box-shadow: 0 0 24px rgba(92, 230, 192, 0.18);
+      font-size: 27px;
+    }
+    .eyebrow {
+      margin: 0 0 17px;
+      color: #5ce6c0;
+      font-family: ui-monospace, "SF Mono", Menlo, monospace;
+      font-size: 15px;
+      letter-spacing: 0.13em;
+      text-transform: uppercase;
+    }
+    h1 { margin: 0; font-size: 57px; line-height: 1.02; letter-spacing: -0.035em; font-weight: 680; }
+    h1 span { color: #5ce6c0; }
+    .lede { margin: 25px 0 0; max-width: 485px; color: #aab4c2; font-size: 21px; line-height: 1.45; }
+    .trust { display: flex; gap: 20px; margin-top: 30px; color: #7c8798; font-size: 14px; }
+    .trust span::before { content: ""; display: inline-block; width: 7px; height: 7px; margin-right: 8px; border-radius: 50%; background: #5ce6c0; box-shadow: 0 0 10px #5ce6c0; }
+    .product { transform: rotate(0.7deg); }
+    .glow { position: absolute; inset: -70px; z-index: -1; background: radial-gradient(circle, rgba(63, 197, 240, 0.16), transparent 62%); filter: blur(24px); }
+    .window { overflow: hidden; border: 1px solid rgba(148, 163, 184, 0.28); border-radius: 17px; background: #0d1219; box-shadow: 0 38px 85px -28px rgba(0, 0, 0, 0.95); }
+    .bar { height: 42px; display: flex; align-items: center; gap: 8px; padding: 0 15px; border-bottom: 1px solid rgba(148, 163, 184, 0.14); background: #10161f; }
+    .bar i { width: 11px; height: 11px; border-radius: 50%; background: #ff5f57; }
+    .bar i:nth-child(2) { background: #febc2e; }
+    .bar i:nth-child(3) { background: #28c840; }
+    .bar span { margin-left: 8px; color: #7c8798; font: 12px ui-monospace, "SF Mono", Menlo, monospace; }
+    .window img { display: block; width: 100%; height: 371px; object-fit: cover; object-position: top; }
+    .badge { width: max-content; margin: 18px auto 0; padding: 9px 16px; border: 1px solid rgba(92, 230, 192, 0.3); border-radius: 999px; color: #5ce6c0; background: rgba(7, 9, 13, 0.86); font: 13px ui-monospace, "SF Mono", Menlo, monospace; }
+  </style>
+</head>
+<body>
+  <section class="copy">
+    <div class="brand"><span class="mark">∿</span> Second Wind</div>
+    <p class="eyebrow">Native macOS · local-first</p>
+    <h1>Understand storage.<br /><span>Review every change.</span></h1>
+    <p class="lede">A conservative Mac storage app built around explicit selection, Recovery, and explainable local rules.</p>
+    <div class="trust"><span>No remote telemetry</span><span>Open source</span></div>
+  </section>
+  <section class="product">
+    <div class="glow"></div>
+    <div class="window">
+      <div class="bar"><i></i><i></i><i></i><span>Second Wind — Storage overview</span></div>
+      <img src="screenshots/home-storage-overview.png" alt="" />
+    </div>
+    <div class="badge">Read-only scan → reviewed cleanup → Recovery</div>
+  </section>
+</body>
+</html>

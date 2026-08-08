@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+  <meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Clear Xcode Derived Data safely — Second Wind</title>
+  <meta name="description" content="Understand Xcode Derived Data, what can be regenerated, and how to clean it conservatively." />
+  <meta property="og:title" content="Clear Xcode Derived Data safely" /><meta property="og:description" content="Understand what Xcode regenerates, what should stay protected, and how to review Derived Data cleanup conservatively." /><meta property="og:type" content="article" />
+  <meta property="og:url" content="https://ianhanna12.github.io/secondWind/guides/clear-xcode-derived-data/" />
+  <meta property="og:image" content="https://ianhanna12.github.io/secondWind/assets/social-card.png" /><meta property="og:image:width" content="1200" /><meta property="og:image:height" content="630" />
+  <meta name="twitter:card" content="summary_large_image" /><meta name="twitter:title" content="Clear Xcode Derived Data safely" /><meta name="twitter:description" content="Understand what Xcode regenerates and how to review Derived Data cleanup conservatively." /><meta name="twitter:image" content="https://ianhanna12.github.io/secondWind/assets/social-card.png" />
+  <link rel="canonical" href="https://ianhanna12.github.io/secondWind/guides/clear-xcode-derived-data/" /><link rel="stylesheet" href="../../css/styles.css" />
+  <script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"Article","headline":"Clear Xcode Derived Data safely","description":"Understand Xcode Derived Data, what can be regenerated, and how to clean it conservatively.","image":"https://ianhanna12.github.io/secondWind/assets/social-card.png","datePublished":"2026-08-08","dateModified":"2026-08-08","author":{"@type":"Person","name":"Ian Hanna"},"mainEntityOfPage":"https://ianhanna12.github.io/secondWind/guides/clear-xcode-derived-data/"},{"@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://ianhanna12.github.io/secondWind/"},{"@type":"ListItem","position":2,"name":"Guides","item":"https://ianhanna12.github.io/secondWind/guides/"},{"@type":"ListItem","position":3,"name":"Xcode Derived Data"}]}]}</script>
+</head><body id="top">
+  <a class="skip-link" href="#main-content">Skip to content</a>
+  <header class="nav nav--static"><nav class="nav__inner" aria-label="Primary"><a class="brand" href="../../"><span class="brand__mark" aria-hidden="true">↝</span><span class="brand__name">Second&nbsp;Wind</span></a><div class="nav__actions"><a class="btn btn--ghost btn--sm" href="../">Guides</a><a class="btn btn--primary btn--sm" href="../../#download">Download</a></div></nav></header>
+  <main class="guide-article" id="main-content">
+    <nav class="guide-breadcrumb" aria-label="Breadcrumb"><a href="../../">Home</a> / <a href="../">Guides</a> / <span aria-current="page">Xcode Derived Data</span></nav>
+    <p class="guide-article__eyebrow">Developer storage</p><h1>Clear Xcode Derived Data safely</h1>
+    <p class="guide-article__lede">Derived Data is generated build output. It can grow large, and Xcode can regenerate it—but that does not mean every developer folder should be deleted without review.</p>
+    <h2>What Derived Data contains</h2>
+    <p>Xcode uses Derived Data for build products, indexes, intermediates, module caches, and related generated files. Removing eligible generated output normally means the next build takes longer while Xcode recreates what it needs.</p>
+    <h2>What to do before cleanup</h2>
+    <ul><li>Stop an active build, test run, archive, simulator task, or Xcode update.</li><li>Save work and make sure you are looking at generated storage rather than your project source.</li><li>Review each path: separate child entries may be shown so their size and purpose are understandable.</li></ul>
+    <h2>Use a reviewed cleanup path</h2>
+    <p>Second Wind recognises specific rule-approved Xcode-generated locations. It explains the matched rule and supported destination, then requires your selection and final confirmation. It does not scan arbitrary project folders or decide that source code is disposable.</p>
+    <p>For additional caution, choose local Recovery rather than Finder Trash. Recovery keeps a local manifest and payload so you can restore the item later. Finder Trash remains useful when you prefer macOS’s usual deletion route.</p>
+    <h2>What not to remove as “Xcode data”</h2>
+    <p>Do not treat all developer storage as Derived Data. Repositories, archives you intend to keep, signing material, simulator content you rely on, project configuration, and unknown support paths need their own explanation and policy.</p>
+    <h2>Common questions</h2>
+    <h3>Will clearing Derived Data break a project?</h3>
+    <p>Eligible Derived Data is generated output rather than project source, and Xcode normally recreates it. A later build or index may take longer. That distinction depends on the exact path, which is why Second Wind uses specific approved locations instead of treating every directory under Developer as disposable.</p>
+    <h3>Should Xcode be running during cleanup?</h3>
+    <p>Finish active builds, tests, archives, simulator work, and updates first. Files can change while Xcode is working, and a source that changes after review should not be assumed to match the plan. Re-scan when the developer tools are idle if the displayed state is no longer current.</p>
+    <aside class="guide-callout"><strong>Expected result</strong><p>You may reclaim storage, but Xcode may rebuild caches later. That is normal; the point is to remove reviewed generated output, not to permanently optimise a Mac.</p></aside>
+    <div class="guide-article__next"><a class="btn btn--ghost" href="../mac-cache-cleanup/">Understand cache cleanup</a><a class="btn btn--primary" href="../../#download">Review developer storage</a></div>
+  </main><footer class="footer"><div class="footer__legal"><p>Copyright © 2026 Ian Hanna. Licensed under GPL-3.0-only.</p><p class="footer__honest">No remote telemetry. No analytics. No cloud sync.</p></div></footer>
+</body></html>

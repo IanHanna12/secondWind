@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://ianhanna12.github.io/secondWind/sitemap.xml
